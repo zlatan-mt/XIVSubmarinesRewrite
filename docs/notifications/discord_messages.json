@@ -1,0 +1,17 @@
+[
+  {
+    "type": "voyage_completion",
+    "title": "Alpha 帰港",
+    "description": "Alpha が航海を完了しました。",
+    "color": "#1ABC9C",
+    "fields": [
+      { "name": "キャラクター", "value": "Player@World", "inline": true },
+      { "name": "航路", "value": "ROUTE-A", "inline": true },
+      { "name": "出航", "value": "2025-09-19 11:00 UTC", "inline": true },
+      { "name": "帰港", "value": "2025-09-19 16:30 UTC", "inline": true },
+      { "name": "所要時間", "value": "5時間 30分", "inline": true },
+      { "name": "信頼度", "value": "Merged", "inline": true }
+    ],
+    "footer": "hash=ABC12345"
+  }
+]

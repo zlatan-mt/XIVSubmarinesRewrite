@@ -1,0 +1,15 @@
+﻿{
+  "Name": "XIV Submarines Rewrite",
+  "Author": "TBD",
+  "InternalName": "XIVSubmarinesRewrite",
+  "Punchline": "Next-generation submarine workshop tools (WIP)",
+  "Description": "Placeholder metadata for the rewrite project. Update as the new implementation takes shape.
+",
+  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesReturn",
+  "IconUrl": "icon.png",
+  "ImageUrls": ["icon.png"],
+  "AssemblyName": "XIVSubmarinesRewrite.dll",
+  "AssemblyVersion": "0.1.0",
+  "DalamudApiLevel": 13,
+  "Tags": ["rewrite", "wip"]
+}

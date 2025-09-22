@@ -1,0 +1,20 @@
+﻿{
+  "Author": "TBD",
+  "Name": "XIV Submarines Rewrite",
+  "InternalName": "XIVSubmarinesRewrite",
+  "Punchline": "Next-generation submarine workshop tools (WIP)",
+  "Description": "Work-in-progress rewrite of the XIV Submarines plugin for Dalamud.",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": 13,
+  "Tags": [
+    "rewrite",
+    "wip"
+  ],
+  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesReturn",
+  "IconUrl": "icon.png",
+  "ImageUrls": [
+    "icon.png"
+  ],
+  "Changelog": "0.1.0: Project scaffold for the full rewrite.",
+  "AssemblyVersion": "0.1.0"
+}

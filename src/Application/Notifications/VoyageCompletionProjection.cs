@@ -1,0 +1,177 @@
+namespace XIVSubmarinesRewrite.Application.Notifications;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using XIVSubmarinesRewrite.Acquisition;
+using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
+using XIVSubmarinesRewrite.Infrastructure.Configuration;
+using XIVSubmarinesRewrite.Application.Services;
+
+/// <summary>Observes snapshot updates and enqueues voyage completion notifications.</summary>
+public sealed partial class VoyageCompletionProjection : IDisposable, IForceNotifyDiagnostics
+{
+    private readonly SnapshotCache cache;
+    private readonly INotificationQueue queue;
+    private readonly NotificationSettings notificationSettings;
+    private readonly ICharacterRegistry characterRegistry;
+    private readonly ILogSink log;
+    private readonly Dictionary<ulong, AcquisitionSnapshot> snapshots = new ();
+    // ForceNotifyUnderway 用のクールダウン間隔。
+    private static readonly TimeSpan ForceNotifyCooldownWindow = TimeSpan.FromMinutes(30);
+    private readonly Dictionary<SubmarineId, ForceNotifyState> forceNotifyStates = new ();
+    private readonly Dictionary<ulong, Dictionary<string, NotificationEnvelope>> pendingNotifications = new ();
+    private readonly Dictionary<SubmarineId, DateTime> lastCompletedArrivals = new ();
+    private readonly object gate = new ();
+    private bool disposed;
+
+    public VoyageCompletionProjection(SnapshotCache cache, INotificationQueue queue, NotificationSettings notificationSettings, ICharacterRegistry characterRegistry, ILogSink log)
+    {
+        this.cache = cache;
+        this.queue = queue;
+        this.notificationSettings = notificationSettings;
+        this.characterRegistry = characterRegistry;
+        this.log = log;
+
+        foreach (var kvp in cache.GetAll())
+        {
+            this.snapshots[kvp.Key] = kvp.Value;
+        }
+
+        this.cache.SnapshotUpdated += this.OnSnapshotUpdated;
+    }
+
+    public void Dispose()
+    {
+        if (this.disposed)
+        {
+            return;
+        }
+
+        this.disposed = true;
+        this.cache.SnapshotUpdated -= this.OnSnapshotUpdated;
+    }
+
+    private void OnSnapshotUpdated(object? sender, SnapshotUpdatedEventArgs args)
+    {
+        AcquisitionSnapshot? previous;
+        lock (this.gate)
+        {
+            this.snapshots.TryGetValue(args.CharacterId, out previous);
+            this.snapshots[args.CharacterId] = args.Snapshot;
+        }
+
+        if (previous is null)
+        {
+            return;
+        }
+
+        var previousVoyages = ExtractVoyages(previous);
+        var currentVoyages = ExtractVoyages(args.Snapshot);
+
+        foreach (var (submarineId, voyage) in currentVoyages)
+        {
+            previousVoyages.TryGetValue(submarineId, out var priorVoyage);
+            this.ProcessVoyage(args.Snapshot, submarineId, voyage, priorVoyage);
+        }
+
+        this.CleanupForceNotifyState(currentVoyages.Values);
+        this.TryFlushPendingNotifications(args.Snapshot);
+    }
+
+    private void ProcessVoyage(AcquisitionSnapshot snapshot, SubmarineId submarineId, Voyage voyage, Voyage? priorVoyage)
+    {
+        if (voyage.Status == VoyageStatus.Completed && voyage.Arrival is not null)
+        {
+            this.HandleCompletedVoyage(snapshot, voyage, priorVoyage);
+            return;
+        }
+
+        if (!this.notificationSettings.ForceNotifyUnderway || voyage.Status != VoyageStatus.Underway)
+        {
+            return;
+        }
+
+        this.HandleForceNotify(snapshot, voyage);
+    }
+
+    private void HandleCompletedVoyage(AcquisitionSnapshot snapshot, Voyage voyage, Voyage? priorVoyage)
+    {
+        var voyageId = voyage.Id;
+        var submarineId = voyage.Id.SubmarineId;
+        var arrivalUtc = voyage.Arrival!.Value.ToUniversalTime();
+
+        if (this.lastCompletedArrivals.TryGetValue(submarineId, out var recordedArrival) && recordedArrival == arrivalUtc)
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} duplicate arrival detected; skipping (arrival={voyage.Arrival}).");
+            return;
+        }
+
+        if (priorVoyage is not null && priorVoyage.Status == VoyageStatus.Completed && priorVoyage.Arrival == voyage.Arrival)
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} already handled (arrival={voyage.Arrival}).");
+            return;
+        }
+
+        this.forceNotifyStates.Remove(submarineId);
+        this.lastCompletedArrivals[submarineId] = arrivalUtc;
+        this.BufferNotification(snapshot, voyage);
+    }
+
+    private void HandleForceNotify(AcquisitionSnapshot snapshot, Voyage voyage)
+    {
+        var submarineId = voyage.Id.SubmarineId;
+        var arrivalUtc = voyage.Arrival?.ToUniversalTime();
+
+        if (!this.forceNotifyStates.TryGetValue(submarineId, out var state))
+        {
+            this.EmitForceNotify(snapshot, voyage, submarineId, "first-detect");
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var arrivalChanged = arrivalUtc.HasValue && (!state.LastArrivalUtc.HasValue || state.LastArrivalUtc.Value != arrivalUtc.Value);
+        if (arrivalChanged)
+        {
+            this.EmitForceNotify(snapshot, voyage, submarineId, "arrival-changed");
+            return;
+        }
+
+        if (now >= state.CooldownUntilUtc)
+        {
+            this.EmitForceNotify(snapshot, voyage, submarineId, "cooldown-expired");
+            return;
+        }
+
+        var remaining = state.CooldownUntilUtc - now;
+        if (remaining <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        var remainingWholeMinutes = Math.Max(0, (int)Math.Ceiling(remaining.TotalMinutes));
+        if (!state.LastLoggedWholeMinutes.HasValue || remainingWholeMinutes < state.LastLoggedWholeMinutes.Value)
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] ForceNotifyUnderway skipping submarine {submarineId}; cooldown {remainingWholeMinutes}m remaining.");
+            this.forceNotifyStates[submarineId] = state with { LastLoggedWholeMinutes = remainingWholeMinutes };
+        }
+    }
+
+    private static Dictionary<SubmarineId, Voyage> ExtractVoyages(AcquisitionSnapshot snapshot)
+    {
+        var result = new Dictionary<SubmarineId, Voyage>();
+        foreach (var submarine in snapshot.Submarines)
+        {
+            var voyage = submarine.Voyages.LastOrDefault();
+            if (voyage is null)
+            {
+                continue;
+            }
+
+            result[submarine.Id] = voyage;
+        }
+
+        return result;
+    }
+}

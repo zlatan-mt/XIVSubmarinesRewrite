@@ -1,0 +1,62 @@
+namespace XIVSubmarinesRewrite.Integrations.Notifications;
+
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using XIVSubmarinesRewrite.Application.Notifications;
+using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Configuration;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
+
+/// <summary>Sends voyage notifications to a Notion automation webhook (Zapier等想定)。</summary>
+public sealed class NotionWebhookClient : INotionClient
+{
+    private readonly HttpClient httpClient;
+    private readonly NotificationSettings settings;
+    private readonly ILogSink log;
+    private readonly JsonSerializerOptions serializerOptions = new (JsonSerializerDefaults.Web)
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false,
+    };
+
+    public NotionWebhookClient(HttpClient httpClient, NotificationSettings settings, ILogSink log)
+    {
+        this.httpClient = httpClient;
+        this.settings = settings;
+        this.log = log;
+    }
+
+    public ValueTask RecordAlarmAsync(Alarm alarm, CancellationToken cancellationToken = default)
+    {
+        _ = alarm;
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask RecordVoyageCompletionAsync(VoyageNotification notification, NotionNotificationPayload payload, CancellationToken cancellationToken = default)
+    {
+        if (!this.settings.EnableNotion || string.IsNullOrWhiteSpace(this.settings.NotionWebhookUrl))
+        {
+            return;
+        }
+
+        var json = JsonSerializer.Serialize(new { notification, payload = payload.Properties }, this.serializerOptions);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var response = await this.httpClient.PostAsync(this.settings.NotionWebhookUrl, content, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var status = (int)response.StatusCode;
+            this.log.Log(LogLevel.Warning, $"[Notifications] Notion webhook failed with {status}: {body}");
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                throw new NotificationRateLimitException(NotificationRetryHelper.ParseRetryAfter(response), "Notion rate limited");
+            }
+            throw new InvalidOperationException($"Notion webhook returned {status}");
+        }
+    }
+}

@@ -1,0 +1,73 @@
+{
+  "format": 1,
+  "restore": {
+    "/mnt/c/Codex/apps/XIVSubmarinesRewrite/XIVSubmarinesRewrite.csproj": {}
+  },
+  "projects": {
+    "/mnt/c/Codex/apps/XIVSubmarinesRewrite/XIVSubmarinesRewrite.csproj": {
+      "version": "0.1.0",
+      "restore": {
+        "projectUniqueName": "/mnt/c/Codex/apps/XIVSubmarinesRewrite/XIVSubmarinesRewrite.csproj",
+        "projectName": "XIVSubmarinesRewrite",
+        "projectPath": "/mnt/c/Codex/apps/XIVSubmarinesRewrite/XIVSubmarinesRewrite.csproj",
+        "packagesPath": "/home/ona/.nuget/packages/",
+        "outputPath": "/mnt/c/Codex/apps/XIVSubmarinesRewrite/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/ona/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0-windows7.0": {
+            "targetAlias": "net9.0-windows",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0-windows7.0": {
+          "targetAlias": "net9.0-windows",
+          "dependencies": {
+            "DalamudPackager": {
+              "target": "Package",
+              "version": "[13.1.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet9/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

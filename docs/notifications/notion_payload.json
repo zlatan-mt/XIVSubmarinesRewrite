@@ -1,0 +1,11 @@
+{
+  "Character": "Player@World",
+  "Submarine": "Alpha",
+  "Route": "ROUTE-A",
+  "DepartureUtc": "2025-09-19T11:00:00Z",
+  "ArrivalUtc": "2025-09-19T16:30:00Z",
+  "Duration": "5時間 30分",
+  "Status": "Completed",
+  "Confidence": "Merged",
+  "Hash": "ABC123456789"
+}
