@@ -28,7 +28,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     // ForceNotifyUnderway 用のクールダウン間隔。
     private static readonly TimeSpan ForceNotifyCooldownWindow = TimeSpan.FromMinutes(30);
     private readonly Dictionary<SubmarineId, ForceNotifyState> forceNotifyStates = new ();
-    private readonly Dictionary<ulong, Dictionary<string, NotificationEnvelope>> pendingNotifications = new ();
+    private readonly PendingVoyageNotificationStore pendingNotifications = new (CompletedArrivalDuplicateTolerance);
     private readonly Dictionary<SubmarineId, DateTime> lastCompletedArrivals = new ();
     private readonly object gate = new ();
     private bool disposed;

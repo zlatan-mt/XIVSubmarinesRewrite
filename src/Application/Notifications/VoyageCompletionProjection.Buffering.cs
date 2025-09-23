@@ -49,45 +49,46 @@ public sealed partial class VoyageCompletionProjection
             return;
         }
 
+        PendingNotificationAddResult result;
         lock (this.gate)
         {
-            if (!this.pendingNotifications.TryGetValue(envelope.CharacterId, out var bucket))
-            {
-                bucket = new Dictionary<string, NotificationEnvelope>(StringComparer.Ordinal);
-                this.pendingNotifications[envelope.CharacterId] = bucket;
-            }
+            result = this.pendingNotifications.Add(envelope);
+        }
 
-            if (this.TryMergeDuplicate(bucket, envelope))
-            {
-                return;
-            }
-
-            bucket[envelope.HashKey] = envelope;
-            this.log.Log(LogLevel.Debug, $"[Notifications] Buffered voyage notification {envelope.HashKey} status={voyage.Status} arrival={voyage.Arrival}.");
+        switch (result)
+        {
+            case PendingNotificationAddResult.Added:
+                this.log.Log(LogLevel.Debug, $"[Notifications] Buffered voyage notification {envelope.HashKey} status={voyage.Status} arrival={voyage.Arrival}.");
+                break;
+            case PendingNotificationAddResult.Replaced:
+                this.log.Log(LogLevel.Debug, $"[Notifications] Replaced buffered voyage notification with {envelope.HashKey} (submarine={envelope.SubmarineId}).");
+                break;
+            case PendingNotificationAddResult.Ignored:
+                this.log.Log(LogLevel.Trace, $"[Notifications] Suppressed duplicate voyage notification {envelope.HashKey} (submarine={envelope.SubmarineId}).");
+                break;
         }
     }
 
     private void TryFlushPendingNotifications(AcquisitionSnapshot snapshot)
     {
-        Dictionary<string, NotificationEnvelope>? buffered;
+        IReadOnlyList<NotificationEnvelope>? buffered;
         lock (this.gate)
         {
-            if (!this.pendingNotifications.TryGetValue(snapshot.CharacterId, out buffered) || buffered.Count == 0)
-            {
-                return;
-            }
-
             if (!AllSubmarinesUnderway(snapshot.Submarines))
             {
                 return;
             }
 
-            this.pendingNotifications.Remove(snapshot.CharacterId);
-            buffered = new Dictionary<string, NotificationEnvelope>(buffered, StringComparer.Ordinal);
+            buffered = this.pendingNotifications.TakeAll(snapshot.CharacterId);
+        }
+
+        if (buffered is null)
+        {
+            return;
         }
 
         this.log.Log(LogLevel.Debug, $"[Notifications] Flushing {buffered.Count} buffered voyage notification(s) for character {snapshot.CharacterId}.");
-        foreach (var envelope in buffered.Values.OrderBy(e => e.Arrival))
+        foreach (var envelope in buffered.OrderBy(e => e.Arrival))
         {
             if (this.queue.TryEnqueue(envelope))
             {
@@ -122,69 +123,5 @@ public sealed partial class VoyageCompletionProjection
         }
 
         return true;
-    }
-
-    private bool TryMergeDuplicate(Dictionary<string, NotificationEnvelope> bucket, NotificationEnvelope candidate)
-    {
-        string? existingKey = null;
-        NotificationEnvelope existing = default!;
-        var found = false;
-
-        foreach (var kvp in bucket)
-        {
-            var envelope = kvp.Value;
-            if (!envelope.SubmarineId.Equals(candidate.SubmarineId))
-            {
-                continue;
-            }
-
-            if (!AreArrivalsClose(envelope.Arrival, candidate.Arrival))
-            {
-                continue;
-            }
-
-            existingKey = kvp.Key;
-            existing = envelope;
-            found = true;
-            break;
-        }
-
-        if (!found || existingKey is null)
-        {
-            return false;
-        }
-
-        if (ShouldReplace(existing, candidate))
-        {
-            bucket.Remove(existingKey);
-            bucket[candidate.HashKey] = candidate;
-            this.log.Log(LogLevel.Debug, $"[Notifications] Replaced buffered voyage notification {existing.HashKey} with {candidate.HashKey} (submarine={candidate.SubmarineId}).");
-        }
-        else
-        {
-            this.log.Log(LogLevel.Trace, $"[Notifications] Suppressed duplicate voyage notification {candidate.HashKey} (submarine={candidate.SubmarineId}).");
-        }
-
-        return true;
-    }
-
-    private static bool ShouldReplace(NotificationEnvelope existing, NotificationEnvelope candidate)
-    {
-        if (candidate.Arrival < existing.Arrival)
-        {
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(existing.RouteId) && !string.IsNullOrWhiteSpace(candidate.RouteId))
-        {
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(existing.SubmarineName) && !string.IsNullOrWhiteSpace(candidate.SubmarineName))
-        {
-            return true;
-        }
-
-        return candidate.Confidence.CompareTo(existing.Confidence) > 0;
     }
 }
