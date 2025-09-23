@@ -33,6 +33,8 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private readonly object gate = new ();
     private bool disposed;
 
+    private bool ShouldNotifyUnderway => this.notificationSettings.NotifyVoyageUnderway || this.notificationSettings.ForceNotifyUnderway;
+
     public VoyageCompletionProjection(
         SnapshotCache cache,
         INotificationQueue queue,
@@ -102,8 +104,14 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
             return;
         }
 
-        if (!this.notificationSettings.ForceNotifyUnderway || voyage.Status != VoyageStatus.Underway)
+        if (voyage.Status != VoyageStatus.Underway)
         {
+            return;
+        }
+
+        if (!this.ShouldNotifyUnderway)
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] Underway voyage {voyage.Id} suppressed; NotifyVoyageUnderway={this.notificationSettings.NotifyVoyageUnderway} ForceNotify={this.notificationSettings.ForceNotifyUnderway}.");
             return;
         }
 
@@ -146,6 +154,12 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         else
         {
             this.lastCompletedArrivals[submarineId] = arrivalUtc;
+        }
+
+        if (!this.notificationSettings.NotifyVoyageCompleted)
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} suppressed; NotifyVoyageCompleted=false arrival={voyage.Arrival}.");
+            return;
         }
 
         this.BufferNotification(snapshot, voyage);

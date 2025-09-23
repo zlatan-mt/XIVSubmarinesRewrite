@@ -19,6 +19,7 @@
 ## Implemented Additions (2025-09-23)
 - `RouteDisplay`: Humanized route label resolved through `RouteCatalog`.
 - `ArrivalLocal`: Local time string (ISO8601) for user-friendly logs.
+- `Remaining`: Friendly remaining/elapsed text mirroring Discord 表示。
 
 ## Deferred Consideration
 - `CompletedAt`: May duplicate `ArrivalUtc`; revisit if downstream tools require separate semantics.
@@ -29,6 +30,6 @@
 - Backwards compatibility ensured by avoiding removal/renaming of existing keys.
 
 ## Next Steps (Phase 2)
-1. Update `VoyageNotificationFormatter.CreateNotionPayload` to populate new keys.
-2. Extend `docs/notifications/notion_payload.json` with sample output for validation.
-3. Manually verify with staging Zap to confirm no breakage.
+1. Done (2025-09-23): `VoyageNotificationFormatter.CreateNotionPayload` populates `RouteDisplay` / `ArrivalLocal` / `Remaining`。
+2. Extend `docs/notifications/notion_payload.json` with additional edge-case samples (例: `NotifyVoyageCompleted=false`).
+3. Manually verify with staging Zap to confirm no breakage。

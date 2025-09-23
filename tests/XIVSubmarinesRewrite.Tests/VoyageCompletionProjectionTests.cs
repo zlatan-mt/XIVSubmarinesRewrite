@@ -49,6 +49,34 @@ public sealed class VoyageCompletionProjectionTests
         Assert.Equal(SubmarineIds.Length, queue.Envelopes.Select(e => e.SubmarineId).Distinct().Count());
     }
 
+    [Fact]
+    public void SkipsCompletedNotificationWhenDisabled()
+    {
+        var cache = new SnapshotCache();
+        var queue = new TestNotificationQueue();
+        var settings = new NotificationSettings
+        {
+            NotifyVoyageCompleted = false,
+        };
+        var registry = new TestCharacterRegistry();
+        var log = new TestLogSink();
+        var characterId = 12345UL;
+
+        cache.Update(CreateSnapshot(characterId, VoyageStatus.Underway, utcOffsetHours: 4), characterId);
+
+        using var projection = new VoyageCompletionProjection(cache, queue, settings, registry, log);
+
+        cache.Update(CreateSnapshot(characterId, VoyageStatus.Completed, utcOffsetHours: 0), characterId);
+
+        Assert.Empty(queue.Envelopes);
+
+        settings.NotifyVoyageCompleted = true;
+        cache.Update(CreateSnapshot(characterId, VoyageStatus.Underway, utcOffsetHours: 6), characterId);
+        cache.Update(CreateSnapshot(characterId, VoyageStatus.Completed, utcOffsetHours: 1), characterId);
+
+        Assert.Equal(SubmarineIds.Length, queue.Envelopes.Count);
+    }
+
     private static AcquisitionSnapshot CreateSnapshot(ulong characterId, VoyageStatus status, int utcOffsetHours)
     {
         var now = DateTime.UtcNow.AddHours(utcOffsetHours);

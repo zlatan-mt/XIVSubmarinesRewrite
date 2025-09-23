@@ -15,11 +15,15 @@ public sealed class NotificationSettings
     public string? NotionWebhookUrl { get; set; }
         = string.Empty;
 
-    public double DiscordBatchWindowSeconds { get; set; } = 2.0;
+    public double DiscordBatchWindowSeconds { get; set; } = 1.5;
 
     public int DeadLetterRetentionLimit { get; set; } = 64;
 
     public bool ForceNotifyUnderway { get; set; } = false;
+
+    public bool NotifyVoyageCompleted { get; set; } = true;
+
+    public bool NotifyVoyageUnderway { get; set; } = true;
 
     public NotificationSettings Clone() => (NotificationSettings)this.MemberwiseClone();
 }

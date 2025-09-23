@@ -34,7 +34,7 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.TextDisabled("ForceNotifyUnderway は無効です。");
             if (snapshots.Count > 0)
             {
-                ImGui.TextColored(new Vector4(0.95f, 0.76f, 0.3f, 1f), "無効化後もクールダウン情報が残っています");
+                ImGui.TextColored(UiTheme.WarningText, "無効化後もクールダウン情報が残っています");
             }
             return;
         }
@@ -118,4 +118,3 @@ public sealed partial class NotificationMonitorWindowRenderer
         return string.Format(CultureInfo.InvariantCulture, "{0}分", Math.Max(1, span.Minutes));
     }
 }
-

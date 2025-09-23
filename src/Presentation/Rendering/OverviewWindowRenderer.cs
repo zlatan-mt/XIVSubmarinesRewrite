@@ -339,10 +339,19 @@ public sealed class OverviewWindowRenderer : IViewRenderer
             ? TimeZoneInfo.ConvertTimeFromUtc(lastUpdatedUtc.Value, TimeZoneInfo.Local).ToString("M/d(ddd) HH:mm:ss", CultureInfo.CurrentCulture)
             : "--";
 
-        ImGui.TextUnformatted("次の帰港: " + nextArrivalLabel);
+        var nextArrivalText = "次の帰港: " + nextArrivalLabel;
+        if (nextArrivalEntry is not null)
+        {
+            ImGui.TextColored(UiTheme.AccentPrimary, nextArrivalText);
+        }
+        else
+        {
+            ImGui.TextColored(UiTheme.MutedText, nextArrivalText);
+        }
+
         ImGui.SameLine();
-        ImGui.TextDisabled($"航行中 {underway}/{submarines.Count}");
-        ImGui.TextDisabled("最終更新: " + lastUpdatedLabel);
+        ImGui.TextColored(UiTheme.MutedText, $"航行中 {underway}/{submarines.Count}");
+        ImGui.TextColored(UiTheme.MutedText, "最終更新: " + lastUpdatedLabel);
         ImGui.Spacing();
     }
 }

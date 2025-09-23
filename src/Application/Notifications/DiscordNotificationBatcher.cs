@@ -21,7 +21,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
     private readonly ILogSink log;
     private TimeSpan batchWindow;
     private readonly object gate = new ();
-    private readonly Dictionary<ulong, BatchState> batches = new ();
+    private readonly Dictionary<(ulong CharacterId, Domain.Models.VoyageStatus Status), BatchState> batches = new ();
     private bool disposed;
 
     public DiscordNotificationBatcher(IDiscordClient discordClient, VoyageNotificationFormatter formatter, ILogSink log, TimeSpan? batchWindow = null)
@@ -29,7 +29,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
         this.discordClient = discordClient;
         this.formatter = formatter;
         this.log = log;
-        this.batchWindow = ValidateWindow(batchWindow ?? TimeSpan.FromSeconds(2));
+        this.batchWindow = ValidateWindow(batchWindow ?? TimeSpan.FromSeconds(1.5));
     }
 
     public void UpdateWindow(TimeSpan window)
@@ -38,6 +38,10 @@ public sealed class DiscordNotificationBatcher : IDisposable
         {
             this.batchWindow = ValidateWindow(window);
         }
+
+        this.log.Log(
+            LogLevel.Information,
+            $"[Notifications] Discord batch window updated windowMs={this.batchWindow.TotalMilliseconds:F0}.");
     }
 
     public ValueTask EnqueueAsync(VoyageNotification notification, DiscordNotificationPayload payload, CancellationToken cancellationToken)
@@ -46,14 +50,14 @@ public sealed class DiscordNotificationBatcher : IDisposable
         lock (this.gate)
         {
             this.ThrowIfDisposed();
-            var key = notification.CharacterId;
+            var key = (notification.CharacterId, notification.Status);
             if (!this.batches.TryGetValue(key, out var state))
             {
                 state = BatchState.Create(notification, payload);
                 this.batches[key] = state;
                 this.log.Log(
                     LogLevel.Debug,
-                    $"[Notifications] Discord batch started character={state.CharacterLabel} window={this.batchWindow.TotalMilliseconds:F0}ms arrival={notification.ArrivalUtc:O}.");
+                    $"[Notifications] Discord batch started character={state.CharacterLabel} status={state.Status} window={this.batchWindow.TotalMilliseconds:F0}ms arrival={notification.ArrivalUtc:O}.");
                 this.ScheduleFlush(key, state);
                 return ValueTask.CompletedTask;
             }
@@ -65,7 +69,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 state.CancelTimer();
                 this.log.Log(
                     LogLevel.Debug,
-                    $"[Notifications] Discord batch reached immediate flush threshold character={state.CharacterLabel} count={state.Items.Count}.");
+                    $"[Notifications] Discord batch reached immediate flush threshold character={state.CharacterLabel} status={state.Status} count={state.Items.Count}.");
                 flushTarget = state;
             }
         }
@@ -125,7 +129,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 var item = state.Items[0];
                 this.log.Log(
                     LogLevel.Debug,
-                    $"[Notifications] Discord batch single dispatch character={state.CharacterLabel} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0}.");
+                    $"[Notifications] Discord batch single dispatch character={state.CharacterLabel} status={state.Status} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0}.");
                 await this.discordClient.SendVoyageCompletionAsync(item.Notification, item.Payload, cancellationToken).ConfigureAwait(false);
                 return;
             }
@@ -135,10 +139,16 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 .OrderBy(n => n.ArrivalUtc)
                 .ToArray();
             var latestArrival = ordered[^1].ArrivalUtc;
-            var payload = this.formatter.CreateDiscordBatchPayload(ordered[0].CharacterLabel, ordered);
+            var payload = this.formatter.CreateDiscordBatchPayload(state.Status, ordered[0].CharacterLabel, ordered);
+            var now = DateTime.UtcNow;
+            var age = now - state.CreatedUtc;
+            var windowMs = state.ScheduledWindow.TotalMilliseconds;
+            var ageMs = age.TotalMilliseconds;
+            var overshootMs = ageMs - windowMs;
+            // 実測した滞留時間を残して、窓調整の判断材料にします。
             this.log.Log(
                 LogLevel.Information,
-                $"[Notifications] Discord batch flush character={state.CharacterLabel} count={state.Items.Count} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0} scheduledWindowMs={state.ScheduledWindow.TotalMilliseconds:F0}.");
+                $"[Notifications] Discord batch flush character={state.CharacterLabel} count={state.Items.Count} ageMs={ageMs:F0} scheduledWindowMs={windowMs:F0} overshootMs={overshootMs:F0}.");
             await this.discordClient.SendVoyageBatchAsync(ordered[0].CharacterLabel, payload, latestArrival, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -154,7 +164,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
         }
     }
 
-    private void ScheduleFlush(ulong key, BatchState state)
+    private void ScheduleFlush((ulong CharacterId, Domain.Models.VoyageStatus Status) key, BatchState state)
     {
         var window = GetCurrentWindow();
         state.ScheduledWindow = window;
@@ -243,6 +253,8 @@ public sealed class DiscordNotificationBatcher : IDisposable
 
         public ulong CharacterId { get; private set; }
 
+        public Domain.Models.VoyageStatus Status { get; private set; }
+
         public DateTime CreatedUtc { get; }
 
         public TimeSpan ScheduledWindow { get; set; }
@@ -253,6 +265,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
             state.Items.Add(new BatchItem(notification, payload));
             state.CharacterLabel = notification.CharacterLabel;
             state.CharacterId = notification.CharacterId;
+            state.Status = notification.Status;
             return state;
         }
 

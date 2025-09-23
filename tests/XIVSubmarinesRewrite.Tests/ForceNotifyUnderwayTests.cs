@@ -95,7 +95,47 @@ public sealed class ForceNotifyUnderwayTests
             _ => { });
     }
 
-    private ProjectionContext CreateProjection()
+    [Fact]
+    public void SnapshotReportsRemainingCooldown()
+    {
+        using var context = this.CreateProjection();
+        var clock = context.Clock;
+        var cache = context.Cache;
+        var projection = context.Projection;
+
+        var arrival = clock.GetUtcNow().UtcDateTime.AddHours(5);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        cache.Update(this.CreateUnderwaySnapshot(clock, arrival), DefaultSubmarineId.CharacterId);
+
+        var states = projection.GetForceNotifySnapshot();
+        Assert.Single(states);
+        var snapshot = states[0];
+        Assert.Equal("first-detect", snapshot.Reason);
+        Assert.True(snapshot.Remaining > TimeSpan.FromMinutes(29));
+    }
+
+    [Fact]
+    public void CompletionClearsForceNotifyState()
+    {
+        using var context = this.CreateProjection();
+        var clock = context.Clock;
+        var cache = context.Cache;
+        var projection = context.Projection;
+        var queue = context.Queue;
+
+        var arrival = clock.GetUtcNow().UtcDateTime.AddHours(6);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        cache.Update(this.CreateUnderwaySnapshot(clock, arrival), DefaultSubmarineId.CharacterId);
+        Assert.Single(queue.Envelopes);
+
+        clock.Advance(TimeSpan.FromMinutes(10));
+        cache.Update(this.CreateCompletedSnapshot(clock, arrival), DefaultSubmarineId.CharacterId);
+
+        var states = projection.GetForceNotifySnapshot();
+        Assert.Empty(states);
+    }
+
+    private ProjectionContext CreateProjection(Action<NotificationSettings>? configure = null)
     {
         var clock = new ManualTimeProvider(DateTimeOffset.Parse("2025-09-23T00:00:00Z"));
         var cache = new SnapshotCache();
@@ -103,7 +143,9 @@ public sealed class ForceNotifyUnderwayTests
         var settings = new NotificationSettings
         {
             ForceNotifyUnderway = true,
+            NotifyVoyageUnderway = true,
         };
+        configure?.Invoke(settings);
         var registry = new TestCharacterRegistry();
         var log = new TestLogSink();
         var characterId = DefaultSubmarineId.CharacterId;
@@ -114,11 +156,40 @@ public sealed class ForceNotifyUnderwayTests
         return new ProjectionContext(projection, cache, queue, clock);
     }
 
+    [Fact]
+    public void UnderwayNotificationsRespectUserFlag()
+    {
+        using var context = this.CreateProjection(s =>
+        {
+            s.ForceNotifyUnderway = false;
+            s.NotifyVoyageUnderway = false;
+        });
+
+        var clock = context.Clock;
+        var cache = context.Cache;
+        var queue = context.Queue;
+
+        var arrival = clock.GetUtcNow().UtcDateTime.AddHours(6);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        cache.Update(this.CreateUnderwaySnapshot(clock, arrival), DefaultSubmarineId.CharacterId);
+
+        Assert.Empty(queue.Envelopes);
+    }
+
     private AcquisitionSnapshot CreateUnderwaySnapshot(ManualTimeProvider clock, DateTime arrivalUtc)
     {
         var nowUtc = clock.GetUtcNow().UtcDateTime;
         var departureUtc = arrivalUtc.AddHours(-12);
         var voyage = new Voyage(VoyageId.Create(DefaultSubmarineId, Guid.NewGuid()), "1-2-3", departureUtc, arrivalUtc, VoyageStatus.Underway);
+        var submarine = new Submarine(DefaultSubmarineId, "Alpha", string.Empty, new[] { voyage });
+        return new AcquisitionSnapshot(nowUtc, new[] { submarine }, AcquisitionSourceKind.Memory, DefaultSubmarineId.CharacterId, "Tester", "Chocobo", SnapshotConfidence.Direct);
+    }
+
+    private AcquisitionSnapshot CreateCompletedSnapshot(ManualTimeProvider clock, DateTime arrivalUtc)
+    {
+        var nowUtc = clock.GetUtcNow().UtcDateTime;
+        var departureUtc = arrivalUtc.AddHours(-12);
+        var voyage = new Voyage(VoyageId.Create(DefaultSubmarineId, Guid.NewGuid()), "1-2-3", departureUtc, arrivalUtc, VoyageStatus.Completed);
         var submarine = new Submarine(DefaultSubmarineId, "Alpha", string.Empty, new[] { voyage });
         return new AcquisitionSnapshot(nowUtc, new[] { submarine }, AcquisitionSourceKind.Memory, DefaultSubmarineId.CharacterId, "Tester", "Chocobo", SnapshotConfidence.Direct);
     }

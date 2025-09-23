@@ -4,7 +4,7 @@
 <!-- RELEVANT FILES: apps/XIVSubmarinesRewrite/XIVSubmarinesRewrite.csproj, scripts/fetch_dalamud_libs.sh, docs/prompts/commands.md -->
 <Project>
   <PropertyGroup>
-    <DalamudLibPath Condition="'$(DalamudLibPath)' == ''">$(MSBuildThisFileDirectory)..\vendor\dalamud</DalamudLibPath>
+    <DalamudLibPath Condition="'$(DalamudLibPath)' == ''">$(MSBuildThisFileDirectory)vendor/dalamud</DalamudLibPath>
     <DalamudLibPath Condition="'$(DalamudLibPath)' == '' and '$(APPDATA)' != ''">$(APPDATA)\XIVLauncher\addon\Hooks\dev</DalamudLibPath>
     <DalamudLibPath Condition="'$(DalamudLibPath)' == ''">/mnt/c/Users/MonaT/AppData/Roaming/XIVLauncher/addon/Hooks/dev</DalamudLibPath>
     <DevPluginsDir Condition="'$(DevPluginsDir)' == '' and '$(APPDATA)' != ''">$(APPDATA)\XIVLauncher\devPlugins\XIVSubmarinesRewrite</DevPluginsDir>

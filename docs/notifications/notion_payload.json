@@ -9,5 +9,6 @@
   "Duration": "5時間 30分",
   "Status": "Completed",
   "Confidence": "Merged",
-  "Hash": "ABC123456789"
+  "Hash": "ABC123456789",
+  "Remaining": "完了"
 }

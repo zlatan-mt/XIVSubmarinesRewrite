@@ -2,6 +2,7 @@ namespace XIVSubmarinesRewrite.Presentation.Rendering;
 
 using System;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using Dalamud.Bindings.ImGui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
@@ -34,6 +35,8 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     private readonly byte[] notionUrlBuffer = new byte[512];
     private float editingDiscordBatchWindowSeconds;
     private bool isVisible;
+    private string? identityToastMessage;
+    private DateTime identityToastExpiryUtc;
 
     public NotificationMonitorWindowRenderer(
         NotificationQueueViewModel queueViewModel,
@@ -132,6 +135,20 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             changed = true;
         }
 
+        var notifyCompleted = this.editingSettings.NotifyVoyageCompleted;
+        if (ImGui.Checkbox("航海完了の通知を送信", ref notifyCompleted))
+        {
+            this.editingSettings.NotifyVoyageCompleted = notifyCompleted;
+            changed = true;
+        }
+
+        var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
+        if (ImGui.Checkbox("出航直後の通知を送信", ref notifyUnderway))
+        {
+            this.editingSettings.NotifyVoyageUnderway = notifyUnderway;
+            changed = true;
+        }
+
         var batchWindowSeconds = this.editingDiscordBatchWindowSeconds;
         if (ImGui.SliderFloat("Discord バッチ間隔 (秒)", ref batchWindowSeconds, 0.5f, 15f, "%.1f"))
         {
@@ -139,6 +156,8 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             this.editingSettings.DiscordBatchWindowSeconds = Math.Round(batchWindowSeconds, 1);
             changed = true;
         }
+
+        this.RenderIdentityRecoveryControls();
 
         if (ImGui.CollapsingHeader("開発オプション", ImGuiTreeNodeFlags.DefaultOpen))
         {
@@ -169,6 +188,76 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         ImGui.EndDisabled();
 
         this.RenderForceNotifyDiagnosticsSection();
+    }
+
+    private void RenderIdentityRecoveryControls()
+    {
+        ImGui.Separator();
+        ImGui.TextColored(UiTheme.MutedText, "キャラクター名の復元");
+
+        if (ImGui.Button("キャラクター名を再取得"))
+        {
+            var refreshed = this.RecoverCharacterIdentities();
+            this.ShowIdentityToast(refreshed);
+        }
+
+        ImGui.SameLine();
+        ImGui.TextColored(UiTheme.MutedText, "設定ファイルが欠損した際に使用してください。");
+        this.RenderIdentityToast();
+        ImGui.Spacing();
+    }
+
+    private int RecoverCharacterIdentities()
+    {
+        var snapshots = this.snapshotCache.GetAll();
+        var refreshed = 0;
+
+        foreach (var kvp in snapshots)
+        {
+            var characterId = kvp.Key;
+            var snapshot = kvp.Value;
+            var before = this.characterRegistry.GetIdentity(characterId);
+            var beforeMissing = before is null
+                || string.IsNullOrWhiteSpace(before.Name)
+                || string.IsNullOrWhiteSpace(before.World);
+            this.characterRegistry.RegisterSnapshot(snapshot);
+            var after = this.characterRegistry.GetIdentity(characterId);
+            var afterMissing = after is null
+                || string.IsNullOrWhiteSpace(after.Name)
+                || string.IsNullOrWhiteSpace(after.World);
+            if (beforeMissing && !afterMissing)
+            {
+                refreshed++;
+            }
+        }
+
+        return refreshed;
+    }
+
+    // 即席のトーストとしてステータスを短時間だけ表示します。
+    private void ShowIdentityToast(int refreshedCount)
+    {
+        this.identityToastMessage = refreshedCount > 0
+            ? $"{refreshedCount} 件のキャラクター名を更新しました。"
+            : "更新可能なキャラクター名はありません。";
+        this.identityToastExpiryUtc = DateTime.UtcNow.AddSeconds(4);
+    }
+
+    private void RenderIdentityToast()
+    {
+        if (this.identityToastMessage is null)
+        {
+            return;
+        }
+
+        if (DateTime.UtcNow > this.identityToastExpiryUtc)
+        {
+            this.identityToastMessage = null;
+            return;
+        }
+
+        ImGui.SameLine();
+        ImGui.TextColored(UiTheme.AccentPrimary, this.identityToastMessage);
     }
 
 

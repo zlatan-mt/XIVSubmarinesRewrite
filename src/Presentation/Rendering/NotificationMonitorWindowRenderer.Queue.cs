@@ -161,6 +161,8 @@ public sealed partial class NotificationMonitorWindowRenderer
         this.settings.NotionWebhookUrl = this.editingSettings.NotionWebhookUrl;
         this.settings.DeadLetterRetentionLimit = this.editingSettings.DeadLetterRetentionLimit;
         this.settings.ForceNotifyUnderway = this.editingSettings.ForceNotifyUnderway;
+        this.settings.NotifyVoyageCompleted = this.editingSettings.NotifyVoyageCompleted;
+        this.settings.NotifyVoyageUnderway = this.editingSettings.NotifyVoyageUnderway;
         this.settings.DiscordBatchWindowSeconds = Math.Clamp(this.editingSettings.DiscordBatchWindowSeconds, 0.5, 15.0);
 
         this.queueOptions.DeadLetterCapacity = Math.Max(1, this.editingSettings.DeadLetterRetentionLimit);
@@ -261,4 +263,3 @@ public sealed partial class NotificationMonitorWindowRenderer
     private static string GetShortHash(string hash)
         => hash.Length <= 8 ? hash : hash[..8];
 }
-
