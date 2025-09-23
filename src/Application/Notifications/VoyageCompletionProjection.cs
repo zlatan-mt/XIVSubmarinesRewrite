@@ -1,17 +1,23 @@
+// apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageCompletionProjection.cs
+// スナップショット更新から航海完了通知を検出し、通知キューへ橋渡しします
+// 同一航海の重複通知を抑えつつ、ForceNotify の制御も統合するために存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageCompletionProjection.Buffering.cs, apps/XIVSubmarinesRewrite/src/Application/Services/NotificationCoordinator.cs, apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageCompletionProjection.ForceNotify.cs
+
 namespace XIVSubmarinesRewrite.Application.Notifications;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using XIVSubmarinesRewrite.Acquisition;
-using XIVSubmarinesRewrite.Domain.Models;
-using XIVSubmarinesRewrite.Infrastructure.Logging;
-using XIVSubmarinesRewrite.Infrastructure.Configuration;
 using XIVSubmarinesRewrite.Application.Services;
+using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Configuration;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
 
 /// <summary>Observes snapshot updates and enqueues voyage completion notifications.</summary>
 public sealed partial class VoyageCompletionProjection : IDisposable, IForceNotifyDiagnostics
 {
+    private static readonly TimeSpan CompletedArrivalDuplicateTolerance = TimeSpan.FromSeconds(90);
     private readonly SnapshotCache cache;
     private readonly INotificationQueue queue;
     private readonly NotificationSettings notificationSettings;
@@ -102,20 +108,38 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var submarineId = voyage.Id.SubmarineId;
         var arrivalUtc = voyage.Arrival!.Value.ToUniversalTime();
 
-        if (this.lastCompletedArrivals.TryGetValue(submarineId, out var recordedArrival) && recordedArrival == arrivalUtc)
+        if (priorVoyage is not null && priorVoyage.Status == VoyageStatus.Completed && priorVoyage.Arrival.HasValue)
         {
-            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} duplicate arrival detected; skipping (arrival={voyage.Arrival}).");
-            return;
-        }
-
-        if (priorVoyage is not null && priorVoyage.Status == VoyageStatus.Completed && priorVoyage.Arrival == voyage.Arrival)
-        {
-            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} already handled (arrival={voyage.Arrival}).");
-            return;
+            var priorArrivalUtc = priorVoyage.Arrival.Value.ToUniversalTime();
+            if (AreArrivalsClose(arrivalUtc, priorArrivalUtc))
+            {
+                this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} already handled (arrival={voyage.Arrival}).");
+                return;
+            }
         }
 
         this.forceNotifyStates.Remove(submarineId);
-        this.lastCompletedArrivals[submarineId] = arrivalUtc;
+        if (this.lastCompletedArrivals.TryGetValue(submarineId, out var recordedArrivalUtc))
+        {
+            if (AreArrivalsClose(arrivalUtc, recordedArrivalUtc))
+            {
+                if (arrivalUtc < recordedArrivalUtc)
+                {
+                    this.lastCompletedArrivals[submarineId] = arrivalUtc;
+                }
+
+                this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} arrival within tolerance ({CompletedArrivalDuplicateTolerance.TotalSeconds:F0}s); refreshing buffer.");
+            }
+            else
+            {
+                this.lastCompletedArrivals[submarineId] = arrivalUtc;
+            }
+        }
+        else
+        {
+            this.lastCompletedArrivals[submarineId] = arrivalUtc;
+        }
+
         this.BufferNotification(snapshot, voyage);
     }
 
@@ -174,4 +198,10 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
 
         return result;
     }
+}
+
+public sealed partial class VoyageCompletionProjection
+{
+    private static bool AreArrivalsClose(DateTime firstUtc, DateTime secondUtc)
+        => (firstUtc - secondUtc).Duration() <= CompletedArrivalDuplicateTolerance;
 }

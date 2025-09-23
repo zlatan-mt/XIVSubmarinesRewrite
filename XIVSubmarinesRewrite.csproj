@@ -21,6 +21,10 @@
     <FileVersion>0.1.0.0</FileVersion>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <BuildTimestamp Condition="'$(BuildTimestamp)' == ''">$([System.DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'"))</BuildTimestamp>
+    <InformationalVersion>0.1.0+build.$(BuildTimestamp)</InformationalVersion>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <Optimize>true</Optimize>
     <DefineConstants>RELEASE</DefineConstants>

@@ -57,14 +57,13 @@ public sealed partial class VoyageCompletionProjection
                 this.pendingNotifications[envelope.CharacterId] = bucket;
             }
 
-            if (bucket.TryAdd(envelope.HashKey, envelope))
+            if (this.TryMergeDuplicate(bucket, envelope))
             {
-                this.log.Log(LogLevel.Debug, $"[Notifications] Buffered voyage notification {envelope.HashKey} status={voyage.Status} arrival={voyage.Arrival}.");
+                return;
             }
-            else
-            {
-                this.log.Log(LogLevel.Trace, $"[Notifications] Pending buffer already contains {envelope.HashKey}; skipping duplicate.");
-            }
+
+            bucket[envelope.HashKey] = envelope;
+            this.log.Log(LogLevel.Debug, $"[Notifications] Buffered voyage notification {envelope.HashKey} status={voyage.Status} arrival={voyage.Arrival}.");
         }
     }
 
@@ -123,5 +122,69 @@ public sealed partial class VoyageCompletionProjection
         }
 
         return true;
+    }
+
+    private bool TryMergeDuplicate(Dictionary<string, NotificationEnvelope> bucket, NotificationEnvelope candidate)
+    {
+        string? existingKey = null;
+        NotificationEnvelope existing = default!;
+        var found = false;
+
+        foreach (var kvp in bucket)
+        {
+            var envelope = kvp.Value;
+            if (!envelope.SubmarineId.Equals(candidate.SubmarineId))
+            {
+                continue;
+            }
+
+            if (!AreArrivalsClose(envelope.Arrival, candidate.Arrival))
+            {
+                continue;
+            }
+
+            existingKey = kvp.Key;
+            existing = envelope;
+            found = true;
+            break;
+        }
+
+        if (!found || existingKey is null)
+        {
+            return false;
+        }
+
+        if (ShouldReplace(existing, candidate))
+        {
+            bucket.Remove(existingKey);
+            bucket[candidate.HashKey] = candidate;
+            this.log.Log(LogLevel.Debug, $"[Notifications] Replaced buffered voyage notification {existing.HashKey} with {candidate.HashKey} (submarine={candidate.SubmarineId}).");
+        }
+        else
+        {
+            this.log.Log(LogLevel.Trace, $"[Notifications] Suppressed duplicate voyage notification {candidate.HashKey} (submarine={candidate.SubmarineId}).");
+        }
+
+        return true;
+    }
+
+    private static bool ShouldReplace(NotificationEnvelope existing, NotificationEnvelope candidate)
+    {
+        if (candidate.Arrival < existing.Arrival)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(existing.RouteId) && !string.IsNullOrWhiteSpace(candidate.RouteId))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(existing.SubmarineName) && !string.IsNullOrWhiteSpace(candidate.SubmarineName))
+        {
+            return true;
+        }
+
+        return candidate.Confidence.CompareTo(existing.Confidence) > 0;
     }
 }

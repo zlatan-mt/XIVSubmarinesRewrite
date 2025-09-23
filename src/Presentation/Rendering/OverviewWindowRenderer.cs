@@ -16,6 +16,7 @@ using ImGuiWindowFlags = Dalamud.Bindings.ImGui.ImGuiWindowFlags;
 using XIVSubmarinesRewrite.Domain.Models;
 using XIVSubmarinesRewrite.Application.Services;
 using XIVSubmarinesRewrite.Infrastructure.Configuration;
+using XIVSubmarinesRewrite.Infrastructure.Diagnostics;
 using XIVSubmarinesRewrite.Infrastructure.Routes;
 using XIVSubmarinesRewrite.Presentation.ViewModels;
 
@@ -28,6 +29,7 @@ public sealed class OverviewWindowRenderer : IViewRenderer
     private readonly UiPreferences preferences;
     private readonly ISettingsProvider settings;
     private readonly RouteCatalog routeCatalog;
+    private readonly string versionLabel;
     private ulong selectedCharacterId;
     private bool isVisible;
 
@@ -44,6 +46,7 @@ public sealed class OverviewWindowRenderer : IViewRenderer
         this.settings = settings;
         this.routeCatalog = routeCatalog;
         this.preferences = settings.Get<UiPreferences>();
+        this.versionLabel = BuildMetadata.DisplayVersion;
         this.isVisible = this.preferences.OverviewWindowVisible;
         this.selectedCharacterId = this.preferences.LastSelectedCharacterId ?? this.characterRegistry.ActiveCharacterId;
         this.characterRegistry.ActiveCharacterChanged += this.OnActiveCharacterChanged;
@@ -83,6 +86,9 @@ public sealed class OverviewWindowRenderer : IViewRenderer
             }
             return;
         }
+
+        ImGui.TextDisabled(this.versionLabel);
+        ImGui.Separator();
 
         var descriptors = this.characterRegistry.Characters;
         if (descriptors.Count == 0)

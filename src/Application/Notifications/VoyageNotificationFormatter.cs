@@ -141,10 +141,26 @@ public sealed class VoyageNotificationFormatter
 
     private static string FormatRemaining(VoyageNotification notification)
     {
-        var remaining = notification.ArrivalUtc - DateTime.UtcNow;
-        if (remaining < TimeSpan.Zero)
+        var nowUtc = DateTime.UtcNow;
+        var remaining = notification.ArrivalUtc - nowUtc;
+
+        if (notification.Status == Domain.Models.VoyageStatus.Completed)
         {
-            remaining = TimeSpan.Zero;
+            var elapsed = nowUtc - notification.ArrivalUtc;
+            if (elapsed <= TimeSpan.FromMinutes(1))
+            {
+                return "完了";
+            }
+
+            var elapsedText = FormatDuration(elapsed);
+            return elapsedText == "不明"
+                ? "完了"
+                : $"完了 ({elapsedText}前)";
+        }
+
+        if (remaining <= TimeSpan.Zero)
+        {
+            return "到着済み";
         }
 
         return FormatDuration(remaining);
