@@ -58,5 +58,9 @@ public sealed class NotionWebhookClient : INotionClient
             }
             throw new InvalidOperationException($"Notion webhook returned {status}");
         }
+
+        this.log.Log(
+            LogLevel.Information,
+            $"[Notifications] Notion webhook dispatched character={notification.CharacterLabel} submarine={notification.SubmarineLabel} hash={notification.HashKeyShort} timestamp={DateTime.UtcNow:O}.");
     }
 }

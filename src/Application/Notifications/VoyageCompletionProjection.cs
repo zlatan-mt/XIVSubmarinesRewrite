@@ -23,6 +23,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private readonly NotificationSettings notificationSettings;
     private readonly ICharacterRegistry characterRegistry;
     private readonly ILogSink log;
+    private readonly TimeProvider timeProvider;
     private readonly Dictionary<ulong, AcquisitionSnapshot> snapshots = new ();
     // ForceNotifyUnderway 用のクールダウン間隔。
     private static readonly TimeSpan ForceNotifyCooldownWindow = TimeSpan.FromMinutes(30);
@@ -32,13 +33,20 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private readonly object gate = new ();
     private bool disposed;
 
-    public VoyageCompletionProjection(SnapshotCache cache, INotificationQueue queue, NotificationSettings notificationSettings, ICharacterRegistry characterRegistry, ILogSink log)
+    public VoyageCompletionProjection(
+        SnapshotCache cache,
+        INotificationQueue queue,
+        NotificationSettings notificationSettings,
+        ICharacterRegistry characterRegistry,
+        ILogSink log,
+        TimeProvider? timeProvider = null)
     {
         this.cache = cache;
         this.queue = queue;
         this.notificationSettings = notificationSettings;
         this.characterRegistry = characterRegistry;
         this.log = log;
+        this.timeProvider = timeProvider ?? TimeProvider.System;
 
         foreach (var kvp in cache.GetAll())
         {
@@ -154,7 +162,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
             return;
         }
 
-        var now = DateTime.UtcNow;
+        var now = this.timeProvider.GetUtcNow().UtcDateTime;
         var arrivalChanged = arrivalUtc.HasValue && (!state.LastArrivalUtc.HasValue || state.LastArrivalUtc.Value != arrivalUtc.Value);
         if (arrivalChanged)
         {

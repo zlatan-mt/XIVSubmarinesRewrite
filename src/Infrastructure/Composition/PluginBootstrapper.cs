@@ -159,7 +159,7 @@ public sealed class PluginBootstrapper : IDisposable
         var notificationWorker = new NotificationWorker(notificationQueue, notificationDispatcher, mainThreadDispatcher, this.logSink);
         this.Services.RegisterSingleton(notificationWorker);
 
-        var voyageProjection = new VoyageCompletionProjection(cache, notificationQueue, notificationSettings, characterRegistry, this.logSink);
+        var voyageProjection = new VoyageCompletionProjection(cache, notificationQueue, notificationSettings, characterRegistry, this.logSink, TimeProvider.System);
         this.Services.RegisterSingleton(voyageProjection);
 
         var eventBus = new InMemoryEventBus();

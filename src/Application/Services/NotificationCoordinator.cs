@@ -69,7 +69,8 @@ public sealed class NotificationCoordinator
         var submarineLabel = BuildSubmarineLabel(envelope);
         var hashShort = envelope.HashKey.Length >= 8 ? envelope.HashKey[..8] : envelope.HashKey;
 
-        var routeLabel = this.routeCatalog.FormatRoute(envelope.RouteId);
+        var routeRaw = envelope.RouteId;
+        var routeDisplay = this.routeCatalog.FormatRoute(routeRaw);
 
         var notification = new VoyageNotification(
             envelope.CharacterId,
@@ -79,7 +80,8 @@ public sealed class NotificationCoordinator
             envelope.SubmarineId,
             submarineLabel,
             envelope.SubmarineName,
-            routeLabel,
+            routeRaw,
+            string.IsNullOrWhiteSpace(routeDisplay) ? routeRaw : routeDisplay,
             envelope.VoyageId,
             departureUtc,
             arrivalUtc,

@@ -14,6 +14,7 @@ public sealed record VoyageNotification(
     string SubmarineLabel,
     string? SubmarineName,
     string? RouteId,
+    string? RouteDisplay,
     VoyageId VoyageId,
     DateTime? DepartureUtc,
     DateTime ArrivalUtc,

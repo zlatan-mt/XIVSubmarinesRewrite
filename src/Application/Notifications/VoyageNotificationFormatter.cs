@@ -29,7 +29,7 @@ public sealed class VoyageNotificationFormatter
         var fields = new List<DiscordNotificationField>
         {
             new ("キャラクター", notification.CharacterLabel, true),
-            new ("航路", notification.RouteId ?? "不明", true),
+            new ("航路", notification.RouteDisplay ?? notification.RouteId ?? "不明", true),
             new ("出航", FormatLocalTimestamp(notification.DepartureUtc), true),
             new ("帰港", FormatLocalTimestamp(notification.ArrivalLocal), true),
             new ("残り", FormatRemaining(notification), true),
@@ -51,8 +51,10 @@ public sealed class VoyageNotificationFormatter
             ["Character"] = notification.CharacterLabel,
             ["Submarine"] = notification.SubmarineLabel,
             ["Route"] = notification.RouteId,
+            ["RouteDisplay"] = notification.RouteDisplay,
             ["DepartureUtc"] = FormatIso(notification.DepartureUtc),
             ["ArrivalUtc"] = notification.ArrivalUtc.ToString("O", CultureInfo.InvariantCulture),
+            ["ArrivalLocal"] = notification.ArrivalLocal.ToString("O", CultureInfo.InvariantCulture),
             ["Duration"] = FormatDuration(notification.Duration),
             ["Status"] = notification.Status.ToString(),
             ["Confidence"] = notification.Confidence.ToString(),
@@ -76,7 +78,7 @@ public sealed class VoyageNotificationFormatter
         {
             var parts = new List<string>(3)
             {
-                $"航路: {notification.RouteId ?? "不明"}",
+                $"航路: {notification.RouteDisplay ?? notification.RouteId ?? "不明"}",
                 $"帰港: {FormatLocalTimestamp(notification.ArrivalLocal)}",
                 $"残り: {FormatRemaining(notification)}",
             };

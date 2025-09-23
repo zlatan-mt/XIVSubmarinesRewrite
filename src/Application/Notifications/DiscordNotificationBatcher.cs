@@ -51,6 +51,9 @@ public sealed class DiscordNotificationBatcher : IDisposable
             {
                 state = BatchState.Create(notification, payload);
                 this.batches[key] = state;
+                this.log.Log(
+                    LogLevel.Debug,
+                    $"[Notifications] Discord batch started character={state.CharacterLabel} window={this.batchWindow.TotalMilliseconds:F0}ms arrival={notification.ArrivalUtc:O}.");
                 this.ScheduleFlush(key, state);
                 return ValueTask.CompletedTask;
             }
@@ -60,6 +63,9 @@ public sealed class DiscordNotificationBatcher : IDisposable
             {
                 this.batches.Remove(key);
                 state.CancelTimer();
+                this.log.Log(
+                    LogLevel.Debug,
+                    $"[Notifications] Discord batch reached immediate flush threshold character={state.CharacterLabel} count={state.Items.Count}.");
                 flushTarget = state;
             }
         }
@@ -117,6 +123,9 @@ public sealed class DiscordNotificationBatcher : IDisposable
             if (state.Items.Count == 1)
             {
                 var item = state.Items[0];
+                this.log.Log(
+                    LogLevel.Debug,
+                    $"[Notifications] Discord batch single dispatch character={state.CharacterLabel} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0}.");
                 await this.discordClient.SendVoyageCompletionAsync(item.Notification, item.Payload, cancellationToken).ConfigureAwait(false);
                 return;
             }
@@ -127,6 +136,9 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 .ToArray();
             var latestArrival = ordered[^1].ArrivalUtc;
             var payload = this.formatter.CreateDiscordBatchPayload(ordered[0].CharacterLabel, ordered);
+            this.log.Log(
+                LogLevel.Information,
+                $"[Notifications] Discord batch flush character={state.CharacterLabel} count={state.Items.Count} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0} scheduledWindowMs={state.ScheduledWindow.TotalMilliseconds:F0}.");
             await this.discordClient.SendVoyageBatchAsync(ordered[0].CharacterLabel, payload, latestArrival, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -145,6 +157,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
     private void ScheduleFlush(ulong key, BatchState state)
     {
         var window = GetCurrentWindow();
+        state.ScheduledWindow = window;
         state.Schedule(Task.Run(async () =>
         {
             try
@@ -219,16 +232,27 @@ public sealed class DiscordNotificationBatcher : IDisposable
         {
             this.Cancellation = new CancellationTokenSource();
             this.Items = new List<BatchItem>();
+            this.CreatedUtc = DateTime.UtcNow;
         }
 
         public List<BatchItem> Items { get; }
 
         public CancellationTokenSource Cancellation { get; }
 
+        public string CharacterLabel { get; private set; } = string.Empty;
+
+        public ulong CharacterId { get; private set; }
+
+        public DateTime CreatedUtc { get; }
+
+        public TimeSpan ScheduledWindow { get; set; }
+
         public static BatchState Create(VoyageNotification notification, DiscordNotificationPayload payload)
         {
             var state = new BatchState();
             state.Items.Add(new BatchItem(notification, payload));
+            state.CharacterLabel = notification.CharacterLabel;
+            state.CharacterId = notification.CharacterId;
             return state;
         }
 

@@ -19,7 +19,7 @@ public sealed partial class VoyageCompletionProjection
     {
         this.log.Log(LogLevel.Trace, $"[Notifications] ForceNotifyUnderway enqueuing voyage {voyage.Id} reason={reason} arrival={voyage.Arrival}.");
         this.EnqueueNotification(snapshot, voyage, forceImmediate: true);
-        var sentAt = DateTime.UtcNow;
+        var sentAt = this.timeProvider.GetUtcNow().UtcDateTime;
         var arrivalUtc = voyage.Arrival?.ToUniversalTime();
         this.forceNotifyStates[submarineId] = new ForceNotifyState(sentAt + ForceNotifyCooldownWindow, arrivalUtc, null, reason, sentAt);
     }
@@ -47,7 +47,7 @@ public sealed partial class VoyageCompletionProjection
     {
         lock (this.gate)
         {
-            var now = DateTime.UtcNow;
+            var now = this.timeProvider.GetUtcNow().UtcDateTime;
             var list = new List<ForceNotifyStateSnapshot>(this.forceNotifyStates.Count);
             foreach (var (submarineId, state) in this.forceNotifyStates)
             {
