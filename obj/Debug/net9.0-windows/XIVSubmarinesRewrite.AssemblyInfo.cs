@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("XIVSubmarinesRewrite")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+5171051f45814e4ac52981ca48d9c3b0ae36d4c3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+build.20250923T041635Z.dc6db045fd8ea4074e44a2a374be24805908feed")]
 [assembly: System.Reflection.AssemblyProductAttribute("XIVSubmarinesRewrite")]
 [assembly: System.Reflection.AssemblyTitleAttribute("XIVSubmarinesRewrite")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]
