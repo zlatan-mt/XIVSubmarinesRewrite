@@ -149,7 +149,7 @@ public sealed class PluginBootstrapper : IDisposable
         var discordBatcher = new DiscordNotificationBatcher(discordClient, notificationFormatter, this.logSink, initialBatchWindow);
         this.Services.RegisterSingleton(discordBatcher);
 
-        var notificationCoordinator = new NotificationCoordinator(discordClient, notionClient, notificationFormatter, routeCatalog, discordBatcher);
+        var notificationCoordinator = new NotificationCoordinator(discordClient, notionClient, notificationFormatter, routeCatalog, discordBatcher, this.logSink);
         this.Services.RegisterSingleton(notificationCoordinator);
 
         var notificationDispatcher = new NotificationCoordinatorDispatcher(notificationCoordinator);

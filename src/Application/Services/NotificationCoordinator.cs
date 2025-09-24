@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XIVSubmarinesRewrite.Application.Notifications;
 using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
 using XIVSubmarinesRewrite.Infrastructure.Routes;
 using XIVSubmarinesRewrite.Integrations.Notifications;
 
@@ -21,19 +22,24 @@ public sealed class NotificationCoordinator
     private readonly VoyageNotificationFormatter formatter;
     private readonly RouteCatalog routeCatalog;
     private readonly DiscordNotificationBatcher discordBatcher;
+    private readonly DiscordCycleNotificationAggregator discordCycleAggregator;
+    private readonly ILogSink log;
 
     public NotificationCoordinator(
         IDiscordClient discordClient,
         INotionClient notionClient,
         VoyageNotificationFormatter formatter,
         RouteCatalog routeCatalog,
-        DiscordNotificationBatcher discordBatcher)
+        DiscordNotificationBatcher discordBatcher,
+        ILogSink log)
     {
         this.discordClient = discordClient;
         this.notionClient = notionClient;
         this.formatter = formatter;
         this.routeCatalog = routeCatalog;
         this.discordBatcher = discordBatcher;
+        this.log = log;
+        this.discordCycleAggregator = new DiscordCycleNotificationAggregator(formatter, log);
     }
 
     public async ValueTask PublishAlarmAsync(Alarm alarm, CancellationToken cancellationToken = default)
@@ -92,11 +98,23 @@ public sealed class NotificationCoordinator
             envelope.HashKey,
             hashShort);
 
-        var discordPayload = this.formatter.CreateDiscordPayload(notification);
         var notionPayload = this.formatter.CreateNotionPayload(notification);
-
-        await this.discordBatcher.EnqueueAsync(notification, discordPayload, cancellationToken).ConfigureAwait(false);
         await this.notionClient.RecordVoyageCompletionAsync(notification, notionPayload, cancellationToken).ConfigureAwait(false);
+
+        var decision = this.discordCycleAggregator.Process(notification);
+        if (decision.Aggregate is { } aggregate)
+        {
+            await this.discordClient.SendVoyageBatchAsync(aggregate.CharacterLabel, aggregate.Payload, aggregate.TimestampUtc, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (decision.IsSuppressed)
+        {
+            return;
+        }
+
+        var discordPayload = this.formatter.CreateDiscordPayload(notification);
+        await this.discordBatcher.EnqueueAsync(notification, discordPayload, cancellationToken).ConfigureAwait(false);
     }
 
     private static string BuildCharacterLabel(NotificationEnvelope envelope)
