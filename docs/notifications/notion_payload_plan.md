@@ -33,3 +33,8 @@
 1. Done (2025-09-23): `VoyageNotificationFormatter.CreateNotionPayload` populates `RouteDisplay` / `ArrivalLocal` / `Remaining`。
 2. Extend `docs/notifications/notion_payload.json` with additional edge-case samples (例: `NotifyVoyageCompleted=false`).
 3. Manually verify with staging Zap to confirm no breakage。
+
+## 2025-09-24 残タスクメモ
+- ステージング Zap のページデータベースで `Remaining` カラムをテンポラリ表示させ、Webhook 受信直後の値をスクリーンショット取得する。
+- Zap 履歴の raw JSON をダウンロードし、`ArrivalLocal` と `Remaining` のフォーマットが ISO8601 / `PT#H#M` 表記かを確認し、差異があればここに記録する。
+- 互換性問題が無い場合は `docs/notifications/notion_payload.json` にサンプルを追記し、sessions ノートへ検証完了を記録する。
