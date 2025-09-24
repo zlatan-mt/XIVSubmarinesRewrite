@@ -63,6 +63,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
             }
 
             state.Items.Add(new BatchItem(notification, payload));
+
             if (state.Items.Count >= 4)
             {
                 this.batches.Remove(key);
@@ -71,6 +72,11 @@ public sealed class DiscordNotificationBatcher : IDisposable
                     LogLevel.Debug,
                     $"[Notifications] Discord batch reached immediate flush threshold character={state.CharacterLabel} status={state.Status} count={state.Items.Count}.");
                 flushTarget = state;
+            }
+            else
+            {
+                state.RestartTimer();
+                this.ScheduleFlush(key, state);
             }
         }
 
@@ -124,9 +130,26 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 return;
             }
 
-            if (state.Items.Count == 1)
+            var uniqueItems = state.Items
+                .GroupBy(i => i.Notification.HashKey, StringComparer.Ordinal)
+                .Select(g => g.OrderByDescending(x => x.Notification.ArrivalUtc).First())
+                .ToList();
+
+            if (uniqueItems.Count == 0)
             {
-                var item = state.Items[0];
+                return;
+            }
+
+            if (uniqueItems.Count < state.Items.Count)
+            {
+                this.log.Log(
+                    LogLevel.Trace,
+                    $"[Notifications] Discord batch suppressed {state.Items.Count - uniqueItems.Count} duplicate notification(s) for character={state.CharacterLabel} status={state.Status}.");
+            }
+
+            if (uniqueItems.Count == 1)
+            {
+                var item = uniqueItems[0];
                 this.log.Log(
                     LogLevel.Debug,
                     $"[Notifications] Discord batch single dispatch character={state.CharacterLabel} status={state.Status} ageMs={(DateTime.UtcNow - state.CreatedUtc).TotalMilliseconds:F0}.");
@@ -134,7 +157,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
                 return;
             }
 
-            var ordered = state.Items
+            var ordered = uniqueItems
                 .Select(i => i.Notification)
                 .OrderBy(n => n.ArrivalUtc)
                 .ToArray();
@@ -148,7 +171,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
             // 実測した滞留時間を残して、窓調整の判断材料にします。
             this.log.Log(
                 LogLevel.Information,
-                $"[Notifications] Discord batch flush character={state.CharacterLabel} count={state.Items.Count} ageMs={ageMs:F0} scheduledWindowMs={windowMs:F0} overshootMs={overshootMs:F0}.");
+                $"[Notifications] Discord batch flush character={state.CharacterLabel} count={uniqueItems.Count} ageMs={ageMs:F0} scheduledWindowMs={windowMs:F0} overshootMs={overshootMs:F0}.");
             await this.discordClient.SendVoyageBatchAsync(ordered[0].CharacterLabel, payload, latestArrival, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -172,7 +195,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
         {
             try
             {
-                await Task.Delay(window, state.Cancellation.Token).ConfigureAwait(false);
+                await Task.Delay(window, state.CancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -238,16 +261,16 @@ public sealed class DiscordNotificationBatcher : IDisposable
 
     private sealed class BatchState : IDisposable
     {
+        private CancellationTokenSource cancellation;
+
         private BatchState()
         {
-            this.Cancellation = new CancellationTokenSource();
+            this.cancellation = new CancellationTokenSource();
             this.Items = new List<BatchItem>();
             this.CreatedUtc = DateTime.UtcNow;
         }
 
         public List<BatchItem> Items { get; }
-
-        public CancellationTokenSource Cancellation { get; }
 
         public string CharacterLabel { get; private set; } = string.Empty;
 
@@ -258,6 +281,8 @@ public sealed class DiscordNotificationBatcher : IDisposable
         public DateTime CreatedUtc { get; }
 
         public TimeSpan ScheduledWindow { get; set; }
+
+        public CancellationToken CancellationToken => this.cancellation.Token;
 
         public static BatchState Create(VoyageNotification notification, DiscordNotificationPayload payload)
         {
@@ -278,16 +303,30 @@ public sealed class DiscordNotificationBatcher : IDisposable
         {
             try
             {
-                this.Cancellation.Cancel();
+                this.cancellation.Cancel();
             }
             catch (ObjectDisposedException)
             {
             }
         }
 
+        public void RestartTimer()
+        {
+            var previous = this.cancellation;
+            this.cancellation = new CancellationTokenSource();
+            try
+            {
+                previous.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            previous.Dispose();
+        }
+
         public void Dispose()
         {
-            this.Cancellation.Dispose();
+            this.cancellation.Dispose();
         }
     }
 }

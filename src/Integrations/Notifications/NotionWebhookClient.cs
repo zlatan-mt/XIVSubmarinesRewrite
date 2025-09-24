@@ -1,6 +1,7 @@
 namespace XIVSubmarinesRewrite.Integrations.Notifications;
 
 using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -44,14 +45,27 @@ public sealed class NotionWebhookClient : INotionClient
             return;
         }
 
-        var json = JsonSerializer.Serialize(new { notification, payload = payload.Properties }, this.serializerOptions);
+        var body = new
+        {
+            payload = payload.Properties,
+            metadata = new
+            {
+                notification.CharacterLabel,
+                notification.SubmarineLabel,
+                ArrivalUtc = notification.ArrivalUtc.ToString("O", CultureInfo.InvariantCulture),
+                notification.Status,
+                notification.HashKeyShort,
+            },
+        };
+
+        var json = JsonSerializer.Serialize(body, this.serializerOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         using var response = await this.httpClient.PostAsync(this.settings.NotionWebhookUrl, content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var status = (int)response.StatusCode;
-            this.log.Log(LogLevel.Warning, $"[Notifications] Notion webhook failed with {status}: {body}");
+            this.log.Log(LogLevel.Warning, $"[Notifications] Notion webhook failed with {status}: {responseBody}");
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 throw new NotificationRateLimitException(NotificationRetryHelper.ParseRetryAfter(response), "Notion rate limited");
