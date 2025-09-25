@@ -31,7 +31,10 @@ public sealed class VoyageCompletionProjectionTests
     {
         var cache = new SnapshotCache();
         var queue = new TestNotificationQueue();
-        var settings = new NotificationSettings();
+        var settings = new NotificationSettings
+        {
+            NotifyVoyageUnderway = false,
+        };
         var registry = new TestCharacterRegistry();
         var log = new TestLogSink();
         var characterId = 12345UL;
