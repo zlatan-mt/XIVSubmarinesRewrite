@@ -15,5 +15,6 @@ public static class UiTheme
     public static readonly Vector4 AccentPrimary = new (0.18f, 0.36f, 0.75f, 1f);
     public static readonly Vector4 WarningText = new (0.95f, 0.72f, 0.28f, 1f);
     public static readonly Vector4 SuccessText = new (0.18f, 0.58f, 0.38f, 1f);
+    public static readonly Vector4 ErrorText = new (0.92f, 0.30f, 0.28f, 1f);
+    public static readonly Vector4 PanelBg = new (0.12f, 0.12f, 0.14f, 0.88f);
 }
-

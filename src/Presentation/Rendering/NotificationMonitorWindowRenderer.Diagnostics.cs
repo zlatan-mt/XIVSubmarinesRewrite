@@ -67,7 +67,12 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.TextUnformatted(this.FormatSubmarineLabel(entry.SubmarineId));
 
             ImGui.TableSetColumnIndex(1);
-            ImGui.TextUnformatted(FormatRemaining(entry.Remaining));
+            var remainingColor = entry.Remaining <= TimeSpan.FromMinutes(5)
+                ? UiTheme.ErrorText
+                : entry.Remaining <= TimeSpan.FromHours(1)
+                    ? UiTheme.WarningText
+                    : UiTheme.PrimaryText;
+            ImGui.TextColored(remainingColor, FormatRemaining(entry.Remaining));
 
             ImGui.TableSetColumnIndex(2);
             ImGui.TextUnformatted(this.FormatLocal(entry.CooldownUntilUtc));
