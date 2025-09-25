@@ -1,3 +1,8 @@
+// apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs
+// 通知モニタウィンドウのメイン描画を束ねるクラスです
+// 設定編集とキューの可視化を 1 画面に集約し、運用調整を簡単にするため存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.Diagnostics.cs, apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.Queue.cs
+
 namespace XIVSubmarinesRewrite.Presentation.Rendering;
 
 using System;
@@ -6,6 +11,8 @@ using System.Numerics;
 using System.Text;
 using Dalamud.Bindings.ImGui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
+using ImGuiCol = Dalamud.Bindings.ImGui.ImGuiCol;
+using ImGuiStyleVar = Dalamud.Bindings.ImGui.ImGuiStyleVar;
 using ImGuiTableColumnFlags = Dalamud.Bindings.ImGui.ImGuiTableColumnFlags;
 using ImGuiTableFlags = Dalamud.Bindings.ImGui.ImGuiTableFlags;
 using ImGuiWindowFlags = Dalamud.Bindings.ImGui.ImGuiWindowFlags;
@@ -108,7 +115,17 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             return;
         }
 
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, UiTheme.PanelBg);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 6f);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10f, 8f));
         var changed = false;
+        if (!ImGui.BeginChild("##notification_settings_panel", Vector2.Zero, true))
+        {
+            ImGui.EndChild();
+            ImGui.PopStyleVar(2);
+            ImGui.PopStyleColor();
+            return;
+        }
 
         var enableDiscord = this.editingSettings.EnableDiscord;
         if (ImGui.Checkbox("Discord 通知を有効化", ref enableDiscord))
@@ -117,6 +134,9 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             changed = true;
         }
         changed |= this.RenderUrlInput("Discord Webhook URL", this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value);
+        var discordStatusText = this.editingSettings.EnableDiscord ? "Discord 通知は有効です" : "Discord 通知は無効です";
+        var discordStatusColor = this.editingSettings.EnableDiscord ? UiTheme.SuccessText : UiTheme.ErrorText;
+        ImGui.TextColored(discordStatusColor, discordStatusText);
 
         ImGui.Separator();
         var enableNotion = this.editingSettings.EnableNotion;
@@ -126,6 +146,9 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             changed = true;
         }
         changed |= this.RenderUrlInput("Notion Webhook URL", this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value);
+        var notionStatusText = this.editingSettings.EnableNotion ? "Notion 通知は有効です" : "Notion 通知は無効です";
+        var notionStatusColor = this.editingSettings.EnableNotion ? UiTheme.SuccessText : UiTheme.ErrorText;
+        ImGui.TextColored(notionStatusColor, notionStatusText);
 
         ImGui.Separator();
         var retention = this.editingSettings.DeadLetterRetentionLimit;
@@ -188,6 +211,10 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         ImGui.EndDisabled();
 
         this.RenderForceNotifyDiagnosticsSection();
+
+        ImGui.EndChild();
+        ImGui.PopStyleVar(2);
+        ImGui.PopStyleColor();
     }
 
     private void RenderIdentityRecoveryControls()

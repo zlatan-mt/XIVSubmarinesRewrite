@@ -1,3 +1,8 @@
+// apps/XIVSubmarinesRewrite/src/Integrations/Notifications/NotionWebhookClient.cs
+// Notion 用 Webhook クライアントの実装です
+// 航海通知を JSON として送信し、Zapier などの自動化と連携させるため存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageNotificationFormatter.cs, apps/XIVSubmarinesRewrite/tests/XIVSubmarinesRewrite.Tests/NotionWebhookContractTests.cs
+
 namespace XIVSubmarinesRewrite.Integrations.Notifications;
 
 using System;
@@ -53,7 +58,7 @@ public sealed class NotionWebhookClient : INotionClient
                 notification.CharacterLabel,
                 notification.SubmarineLabel,
                 ArrivalUtc = notification.ArrivalUtc.ToString("O", CultureInfo.InvariantCulture),
-                notification.Status,
+                Status = notification.Status.ToString(),
                 notification.HashKeyShort,
             },
         };
