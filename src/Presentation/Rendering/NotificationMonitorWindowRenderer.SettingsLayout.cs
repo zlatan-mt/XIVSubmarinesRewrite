@@ -14,24 +14,28 @@ using ImGuiStyleVar = Dalamud.Bindings.ImGui.ImGuiStyleVar;
 using ImGuiWindowFlags = Dalamud.Bindings.ImGui.ImGuiWindowFlags;
 using ImGuiTreeNodeFlags = Dalamud.Bindings.ImGui.ImGuiTreeNodeFlags;
 using ImGuiMouseCursor = Dalamud.Bindings.ImGui.ImGuiMouseCursor;
+using ImGuiTableColumnFlags = Dalamud.Bindings.ImGui.ImGuiTableColumnFlags;
+using ImGuiTableFlags = Dalamud.Bindings.ImGui.ImGuiTableFlags;
 
 public sealed partial class NotificationMonitorWindowRenderer
 {
-    private bool RenderChannelCard(string id, string title, ref bool enabled, byte[] buffer, Action<string> setter, float width)
+    private bool RenderChannelCard(string id, string title, ref bool enabled, byte[] buffer, Action<string> setter, float width, float height)
     {
         var changed = false;
-        var cardWidth = MathF.Max(width, 280f);
-        var cardHeight = 140f;
+        var cardWidth = MathF.Max(width, ChannelCardMinWidth);
+        var cardHeight = MathF.Max(height, ChannelCardMinWidth * 0.4f); // guard against overly short cards when metrics request a compact height
         ImGui.PushID(id);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10f, 6f));
-        if (ImGui.BeginChild("channel_card", new Vector2(cardWidth, cardHeight), true))
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(6f, 4f));
+        var childFlags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.AlwaysUseWindowPadding;
+        if (ImGui.BeginChild("channel_card", new Vector2(cardWidth, cardHeight), true, childFlags))
         {
             var stateText = enabled ? "ACTIVE" : "OFF";
             var stateColor = enabled ? UiTheme.SuccessText : UiTheme.MutedText;
             ImGui.TextColored(UiTheme.PrimaryText, title);
             ImGui.SameLine();
             ImGui.TextColored(stateColor, stateText);
-            ImGui.SameLine(0f, 12f);
+            ImGui.SameLine(0f, 8f);
             var checkboxLabel = "通知を送信";
             if (ImGui.Checkbox(checkboxLabel, ref enabled))
             {
@@ -40,9 +44,10 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.PushItemWidth(-1f);
             changed |= this.RenderUrlInput("Webhook URL", buffer, setter);
             ImGui.PopItemWidth();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2f);
         }
         ImGui.EndChild();
-        ImGui.PopStyleVar();
+        ImGui.PopStyleVar(2);
         ImGui.PopID();
         return changed;
     }
@@ -203,14 +208,15 @@ public sealed partial class NotificationMonitorWindowRenderer
 
     private void RenderResizeHandle()
     {
-        var handleSize = new Vector2(24f, 24f);
-        var padding = new Vector2(8f, 8f);
+        var handleSize = new Vector2(28f, 28f);
+        var padding = new Vector2(10f, 10f);
         var windowPos = ImGui.GetWindowPos();
         var windowSize = ImGui.GetWindowSize();
         var handlePos = windowPos + windowSize - handleSize - padding;
 
         ImGui.SetCursorScreenPos(handlePos);
         ImGui.InvisibleButton("##notify_resize", handleSize);
+        ImGui.SetItemAllowOverlap();
         var hovered = ImGui.IsItemHovered();
         var active = ImGui.IsItemActive();
 
@@ -235,10 +241,11 @@ public sealed partial class NotificationMonitorWindowRenderer
             var delta = io.MouseDelta;
             var newSize = windowSize + delta;
             newSize.X = MathF.Max(newSize.X, 520f);
-            newSize.Y = MathF.Max(newSize.Y, 420f);
-            newSize.X = MathF.Min(newSize.X, 900f);
-            newSize.Y = MathF.Min(newSize.Y, 860f);
+            newSize.Y = MathF.Max(newSize.Y, 360f);
+            newSize.X = MathF.Min(newSize.X, 1400f);
+            newSize.Y = MathF.Min(newSize.Y, 980f);
             ImGui.SetWindowSize(newSize);
         }
     }
+
 }

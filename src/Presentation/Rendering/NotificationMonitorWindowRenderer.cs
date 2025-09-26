@@ -83,9 +83,9 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         }
 
         var title = "XIV Submarines — Notifications";
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new Vector2(640f, 500f));
-        ImGui.SetNextWindowSize(new Vector2(780f, 560f), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(640f, 420f), new Vector2(1100f, 860f));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new Vector2(520f, 380f));
+        ImGui.SetNextWindowSize(new Vector2(760f, 540f), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSizeConstraints(new Vector2(520f, 360f), new Vector2(1400f, 980f));
 
         if (!ImGui.Begin(title, ref this.isVisible))
         {
@@ -124,40 +124,38 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
         ImGui.PushStyleColor(ImGuiCol.ChildBg, UiTheme.PanelBg);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 6f);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(12f, 6f));
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10f, 5f));
 
         var windowHeight = ImGui.GetWindowHeight();
-        var panelHeight = windowHeight > 0f ? windowHeight * 0.55f : 360f;
-        panelHeight = MathF.Max(panelHeight, 280f);
-        panelHeight = MathF.Min(panelHeight, 460f);
+        var panelHeight = windowHeight > 0f ? MathF.Min(windowHeight * 0.5f, windowHeight - 160f) : 320f;
+        panelHeight = MathF.Max(220f, MathF.Min(panelHeight, 400f));
 
         if (ImGui.BeginChild("##notification_settings_panel", new Vector2(0f, panelHeight), true, ImGuiWindowFlags.AlwaysUseWindowPadding))
         {
             var changed = false;
             var spacing = ImGui.GetStyle().ItemSpacing.X;
             var width = ImGui.GetContentRegionAvail().X;
-            var twoColumnThreshold = 620f;
-            var twoColumn = width >= twoColumnThreshold;
-            var cardWidth = twoColumn
-                ? MathF.Max((width - spacing) * 0.5f, 280f)
-                : MathF.Max(width, 280f);
+            var metrics = SettingsLayoutMetrics.Create(width, panelHeight, spacing, 620f);
+            this.settingsLayoutDebug = SettingsLayoutDebugSnapshot.Create(metrics);
 
             var discordEnabled = this.editingSettings.EnableDiscord;
             var notionEnabled = this.editingSettings.EnableNotion;
+            var twoColumn = metrics.UsesTwoColumn;
+            var cardWidth = metrics.CardWidth;
 
             if (twoColumn)
             {
                 ImGui.BeginGroup();
-                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth);
+                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth, metrics.CardHeight);
                 ImGui.SameLine(0f, spacing);
-                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth);
+                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth, metrics.CardHeight);
                 ImGui.EndGroup();
             }
             else
             {
-                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth);
-                ImGui.Spacing();
-                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth);
+                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth, metrics.CardHeight);
+                ImGui.Dummy(new Vector2(0f, metrics.StackSpacingY));
+                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth, metrics.CardHeight);
             }
 
             this.editingSettings.EnableDiscord = discordEnabled;
@@ -188,6 +186,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
             ImGui.Separator();
             this.RenderForceNotifyDiagnosticsSection();
+            this.RenderSettingsLayoutDebugPanel();
 
             ImGui.EndChild();
         }

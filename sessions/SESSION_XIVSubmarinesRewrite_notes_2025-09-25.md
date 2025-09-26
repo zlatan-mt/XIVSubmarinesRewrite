@@ -66,3 +66,28 @@
 - ウィンドウ右下にリサイズハンドルを追加し、最小 640×420 / 最大 1100×860 の範囲でドラッグ調整可能。初期サイズは 780×560 に設定。  
 - 通知キューセクションは従来通りテーブル表示。ウィンドウの残り高さに自動追従し、保持中・デッドレター件数、再送ボタン、末尾にテキストサマリを表示する。  
 - 現状の課題: カード内に僅かな空間が残っており、Webhook URL の下部余白をさらに圧縮する必要あり。横幅 640px でも URL 入力が完全表示できるが、今後ラベルや補助説明を入れる場合は折り返しを検討する。
+
+### 2025-09-26 UI 調整 2nd pass
+
+### Phase9-A Layout Metrics (2025-09-26)
+
+### Phase9-B Layout Adjustments (2025-09-26)
+- ウィンドウ最小サイズを 520×380 / 最小拘束 520×360 へ変更し、最大も 1400×980 まで解放。手動リサイズが現実的になった。  
+- 設定ペイン高さを windowHeight に応じて 220〜400px へクランプし、余計な縦余白を削減。ItemSpacing も 10×5px に調整。  
+- ChannelCard 高さを 132px ベースに圧縮し、1列モードでは追加で 10px 削減。URL 入力下の余白が解消された。  
+- Diagnostics メトリクスに StackSpacingY を追加し、縦積み時のスペーサーを 7px 程度に固定。カード間の空白が過剰にならない。  
+- RenderChannelCard の高さ引数を導入し、LayoutMetrics から受け取った寸法をそのまま適用。2列モードでも幅と高さが揃う。  
+- TODO: Playwright テストへ StackSpacingY を検証する追加アサーションを Phase9-C で検討。  
+- PanelHeight: 358.6px, ItemSpacingX: 12.0px。診断表の値から抜粋。  
+- 現在 (1列): 利用幅 378.0px / カード幅 378.0px。スクリーンショット: `logs/スクリーンショット 2025-09-26 191018.png`。  
+- 幅640px (2列): 利用幅 640.0px / カード幅 314.0px。レイアウト切替ポイントの決定根拠。  
+- 幅780px (2列): 利用幅 780.0px / カード幅 384.0px。横並び時の余白量確認に使用。  
+- 縦積み時の余白: Discord カード下に約 12px のスペーサーが残存。横積みへの移行時に余裕あり。
+- 実装計画: 余白解消と手動リサイズ対応を仕上げる。通知カードを 1 項目 1 行へ、ウィンドウ幅をドラッグで変更できるようにする。  
+- 変更ファイル:  
+  - `src/Presentation/Rendering/NotificationMonitorWindowRenderer.SettingsLayout.cs` — カード高さを行数に応じて算出し、WindowPadding/ItemSpacing を詰めた。`RenderUrlInput` を新形式に合わせて呼び出す。  
+  - `src/Presentation/Rendering/NotificationMonitorWindowRenderer.Queue.cs` — ラベル＋同一行の入力に描画を統一し、余計な `InputText` をなくした。  
+  - `src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs` — スペース調整用に `ImGui.Dummy` を使い、縦積み時でも Notion カードが潰れないようにした。  
+  - `src/Presentation/Rendering/OverviewWindowRenderer.cs` — `ImGuiWindowFlags.AlwaysAutoResize` を外し、初期サイズ/最少/最大サイズを指定して手動リサイズを有効化。  
+- テスト: `dotnet build -c Release` と `dotnet test tests/XIVSubmarinesRewrite.Tests/XIVSubmarinesRewrite.Tests.csproj` を実行し成功。Release 成果物を `C:\Users\MonaT\AppData\Roaming\XIVLauncher\devPlugins\XIVSubmarinesRewrite\` へ再配置し、Dalamud 上でリサイズ動作を確認。  
+- 次の課題: Webhook 入力欄直下の余白が一部環境で残るため、カード内 `ItemSpacing` と `RenderUrlInput` の余白再調整が必要。横幅が閾値未満の場合の Notion カード表示が潰れるので、縦積み時のカード高さ/幅ロジックを追加調整する。
