@@ -94,7 +94,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             return;
         }
 
-        this.RenderContent();
+        this.RenderContent(includeDeveloperOptions: true, includeDiagnostics: true);
         this.RenderResizeHandle();
 
         ImGui.End();
@@ -104,18 +104,48 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     public void RenderInline()
     {
         ImGui.PushID("xsr_notify_inline");
-        this.RenderContent();
+        this.RenderContent(includeDeveloperOptions: true, includeDiagnostics: true);
         ImGui.PopID();
     }
 
-    private void RenderContent()
+    public void RenderNotificationTab()
     {
-        this.RenderSettingsSection();
-        ImGui.Separator();
-        this.RenderQueueSection();
+        ImGui.PushID("xsr_notify_tab");
+        this.RenderContent(includeDeveloperOptions: false, includeDiagnostics: false);
+        ImGui.PopID();
     }
 
-    private void RenderSettingsSection()
+    public void RenderDeveloperTab()
+    {
+        ImGui.PushID("xsr_notify_dev_tab");
+        var changed = this.RenderDeveloperOptions();
+
+        ImGui.Separator();
+        this.RenderForceNotifyDiagnosticsSection();
+        ImGui.Separator();
+        this.RenderSettingsLayoutDebugPanel();
+
+        if (changed)
+        {
+            this.settingsDirty = true;
+        }
+        ImGui.PopID();
+    }
+
+    private void RenderContent(bool includeDeveloperOptions, bool includeDiagnostics)
+    {
+        this.RenderSettingsSection(includeDeveloperOptions);
+        ImGui.Separator();
+        this.RenderQueueSection();
+        if (includeDiagnostics)
+        {
+            ImGui.Separator();
+            this.RenderForceNotifyDiagnosticsSection();
+            this.RenderSettingsLayoutDebugPanel();
+        }
+    }
+
+    private void RenderSettingsSection(bool includeDeveloperOptions)
     {
         if (!ImGui.CollapsingHeader("通知設定", ImGuiTreeNodeFlags.DefaultOpen))
         {
@@ -167,8 +197,11 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             ImGui.Separator();
             this.RenderIdentityRecoveryControls();
 
-            ImGui.Separator();
-            changed |= this.RenderDeveloperOptions();
+            if (includeDeveloperOptions)
+            {
+                ImGui.Separator();
+                changed |= this.RenderDeveloperOptions();
+            }
 
             if (changed)
             {
@@ -183,10 +216,6 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             ImGui.EndDisabled();
             ImGui.SameLine();
             ImGui.TextColored(UiTheme.MutedText, "保存すると即座に Dalamud へ反映されます。");
-
-            ImGui.Separator();
-            this.RenderForceNotifyDiagnosticsSection();
-            this.RenderSettingsLayoutDebugPanel();
 
             ImGui.EndChild();
         }

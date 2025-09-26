@@ -77,7 +77,7 @@ public sealed class OverviewWindowRenderer : IViewRenderer
 
         var title = "XIV Submarines — Overview";
         var wasVisible = this.isVisible;
-        if (!ImGui.Begin(title, ref this.isVisible, ImGuiWindowFlags.AlwaysAutoResize))
+        if (!ImGui.Begin(title, ref this.isVisible, ImGuiWindowFlags.None))
         {
             ImGui.End();
             if (wasVisible != this.isVisible)
@@ -87,6 +87,23 @@ public sealed class OverviewWindowRenderer : IViewRenderer
             return;
         }
 
+        this.RenderOverviewContent(includeNotificationTab: true);
+
+        ImGui.End();
+
+        if (wasVisible != this.isVisible)
+        {
+            this.PersistVisibility();
+        }
+    }
+
+    public void RenderTabContent()
+    {
+        this.RenderOverviewContent(includeNotificationTab: false);
+    }
+
+    private void RenderOverviewContent(bool includeNotificationTab)
+    {
         ImGui.TextDisabled(this.versionLabel);
         ImGui.Separator();
 
@@ -95,21 +112,11 @@ public sealed class OverviewWindowRenderer : IViewRenderer
         {
             ImGui.Text("キャラクターのデータがまだありません。");
             ImGui.TextDisabled("工房 UI を開き、スナップショットを取得してください。");
-            ImGui.End();
-            if (wasVisible != this.isVisible)
-            {
-                this.PersistVisibility();
-            }
             return;
         }
 
         if (!this.TryEnsureSelection(descriptors))
         {
-            ImGui.End();
-            if (wasVisible != this.isVisible)
-            {
-                this.PersistVisibility();
-            }
             return;
         }
 
@@ -138,28 +145,28 @@ public sealed class OverviewWindowRenderer : IViewRenderer
 
         ImGui.Separator();
 
-        if (ImGui.BeginTabBar("xsr_overview_tabs"))
+        if (includeNotificationTab)
         {
-            if (ImGui.BeginTabItem("潜水艦"))
+            if (ImGui.BeginTabBar("xsr_overview_tabs"))
             {
-                this.RenderSubmarineTab();
-                ImGui.EndTabItem();
-            }
+                if (ImGui.BeginTabItem("潜水艦"))
+                {
+                    this.RenderSubmarineTab();
+                    ImGui.EndTabItem();
+                }
 
-            if (ImGui.BeginTabItem("通知"))
-            {
-                this.notificationWindow.RenderInline();
-                ImGui.EndTabItem();
-            }
+                if (ImGui.BeginTabItem("通知"))
+                {
+                    this.notificationWindow.RenderInline();
+                    ImGui.EndTabItem();
+                }
 
-            ImGui.EndTabBar();
+                ImGui.EndTabBar();
+            }
         }
-
-        ImGui.End();
-
-        if (wasVisible != this.isVisible)
+        else
         {
-            this.PersistVisibility();
+            this.RenderSubmarineTab();
         }
     }
 

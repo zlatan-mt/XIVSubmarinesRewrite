@@ -62,33 +62,21 @@ public sealed partial class NotificationMonitorWindowRenderer
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.TextColored(UiTheme.MutedText, "デッドレター保持数");
-            ImGui.TableNextColumn();
-            var retention = this.editingSettings.DeadLetterRetentionLimit;
-            ImGui.SetNextItemWidth(-1f);
-            if (ImGui.SliderInt("##deadLetter", ref retention, 8, 256))
-            {
-                this.editingSettings.DeadLetterRetentionLimit = retention;
-                changed = true;
-            }
-
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            ImGui.TextColored(UiTheme.MutedText, "航海完了の通知");
+            ImGui.TextColored(UiTheme.MutedText, "航海完了の通知 / 出港直後の通知");
             ImGui.TableNextColumn();
             var notifyCompleted = this.editingSettings.NotifyVoyageCompleted;
-            if (ImGui.Checkbox("オン##notifyCompleted", ref notifyCompleted))
+            var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
+            var columnWidth = ImGui.GetContentRegionAvail().X;
+            var halfWidth = MathF.Max(0f, columnWidth * 0.5f - ImGui.GetStyle().ItemInnerSpacing.X);
+            ImGui.SetNextItemWidth(halfWidth);
+            if (ImGui.Checkbox("航海完了を通知", ref notifyCompleted))
             {
                 this.editingSettings.NotifyVoyageCompleted = notifyCompleted;
                 changed = true;
             }
-
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            ImGui.TextColored(UiTheme.MutedText, "出航直後の通知");
-            ImGui.TableNextColumn();
-            var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
-            if (ImGui.Checkbox("オン##notifyUnderway", ref notifyUnderway))
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(-1f);
+            if (ImGui.Checkbox("出港直後を通知", ref notifyUnderway))
             {
                 this.editingSettings.NotifyVoyageUnderway = notifyUnderway;
                 changed = true;
@@ -98,15 +86,6 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.TableNextColumn();
             ImGui.TextColored(UiTheme.MutedText, "Discord バッチ間隔 (秒)");
             ImGui.TableNextColumn();
-            var batchWindowSeconds = this.editingDiscordBatchWindowSeconds;
-            ImGui.SetNextItemWidth(-1f);
-            if (ImGui.SliderFloat("##batchWindow", ref batchWindowSeconds, 0.5f, 15f, "%.1f"))
-            {
-                this.editingDiscordBatchWindowSeconds = batchWindowSeconds;
-                this.editingSettings.DiscordBatchWindowSeconds = Math.Round(batchWindowSeconds, 1);
-                changed = true;
-            }
-
             ImGui.EndTable();
         }
 

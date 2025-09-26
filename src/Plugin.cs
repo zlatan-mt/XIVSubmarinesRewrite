@@ -31,9 +31,9 @@ public sealed class Plugin : IDalamudPlugin
     private readonly LowImpactModeController modeController;
     private readonly OverviewWindowRenderer overviewWindow;
     private readonly NotificationMonitorWindowRenderer notificationWindow;
+    private readonly MainWindowRenderer mainWindow;
     private const string CommandRoot = "/xsr";
     private DateTime nextRefreshAt = DateTime.MinValue;
-    private bool initialUiRequestHandled;
 
     [PluginService] private static IFramework Framework { get; set; } = null!;
     [PluginService] private static IClientState ClientState { get; set; } = null!;
@@ -69,21 +69,22 @@ public sealed class Plugin : IDalamudPlugin
             _ = overview.RefreshAsync(initialCid);
         }
 
+        var uiPreferences = settingsProvider.Get<UiPreferences>();
         this.overviewWindow = new OverviewWindowRenderer(overview, characterRegistry, this.notificationWindow, settingsProvider, routeCatalog);
+        this.mainWindow = new MainWindowRenderer(this.overviewWindow, this.notificationWindow, uiPreferences, settingsProvider);
 
         Framework.Update += this.OnFrameworkUpdate;
         ClientState.Login += this.OnClientLogin;
-        PluginInterface.UiBuilder.Draw += this.DrawUi;
-        PluginInterface.UiBuilder.Draw += this.DrawNotificationWindow;
-        PluginInterface.UiBuilder.OpenMainUi += this.ShowUi;
-        PluginInterface.UiBuilder.OpenConfigUi += this.ShowUi;
+        PluginInterface.UiBuilder.Draw += this.DrawMainWindow;
+        PluginInterface.UiBuilder.OpenMainUi += this.ShowMainWindow;
+        PluginInterface.UiBuilder.OpenConfigUi += this.ShowMainWindow;
         CommandManager.AddHandler(CommandRoot, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "XIV Submarines Rewrite のウィンドウを表示/非表示します。",
         });
-        CommandManager.AddHandler(CommandRoot + " notify", new CommandInfo(this.OnNotificationCommand)
+        CommandManager.AddHandler(CommandRoot + "notify", new CommandInfo(this.OnNotificationCommand)
         {
-            HelpMessage = "通知モニタを表示/非表示します。",
+            HelpMessage = "通知タブを開きます。",
         });
     }
 
@@ -102,60 +103,56 @@ public sealed class Plugin : IDalamudPlugin
         _ = this.orchestrator.ExecuteAsync();
     }
 
-    private void DrawUi()
+    private void DrawMainWindow()
     {
-        this.overviewWindow.Render();
+        this.mainWindow.Render();
     }
 
-    private void DrawNotificationWindow()
+    private void ShowMainWindow()
     {
-        this.notificationWindow.Render();
-    }
-
-    private void ShowUi()
-    {
-        if (!this.initialUiRequestHandled)
-        {
-            this.initialUiRequestHandled = true;
-            if (!this.overviewWindow.IsVisible)
-            {
-                return;
-            }
-        }
-
-        this.overviewWindow.Show();
+        this.mainWindow.Open(MainWindowTab.Overview);
     }
 
     private void OnCommand(string command, string args)
     {
         _ = command;
-        _ = args;
-        this.overviewWindow.Toggle();
+        var trimmed = args?.Trim() ?? string.Empty;
+        if (trimmed.Equals("notify", StringComparison.OrdinalIgnoreCase))
+        {
+            this.mainWindow.Open(MainWindowTab.Notifications);
+            return;
+        }
+
+        if (trimmed.Equals("dev", StringComparison.OrdinalIgnoreCase))
+        {
+            this.mainWindow.Open(MainWindowTab.Developer);
+            return;
+        }
+
+        this.mainWindow.Toggle(MainWindowTab.Overview);
     }
 
     private void OnNotificationCommand(string command, string args)
     {
         _ = command;
         _ = args;
-        this.notificationWindow.IsVisible = !this.notificationWindow.IsVisible;
+        this.mainWindow.Open(MainWindowTab.Notifications);
     }
 
     private void OnClientLogin()
     {
-        this.initialUiRequestHandled = false;
-        this.overviewWindow.IsVisible = false;
+        this.mainWindow.IsVisible = false;
     }
 
     public void Dispose()
     {
         Framework.Update -= this.OnFrameworkUpdate;
         ClientState.Login -= this.OnClientLogin;
-        PluginInterface.UiBuilder.Draw -= this.DrawUi;
-        PluginInterface.UiBuilder.Draw -= this.DrawNotificationWindow;
-        PluginInterface.UiBuilder.OpenMainUi -= this.ShowUi;
-        PluginInterface.UiBuilder.OpenConfigUi -= this.ShowUi;
+        PluginInterface.UiBuilder.Draw -= this.DrawMainWindow;
+        PluginInterface.UiBuilder.OpenMainUi -= this.ShowMainWindow;
+        PluginInterface.UiBuilder.OpenConfigUi -= this.ShowMainWindow;
         CommandManager.RemoveHandler(CommandRoot);
-        CommandManager.RemoveHandler(CommandRoot + " notify");
+        CommandManager.RemoveHandler(CommandRoot + "notify");
         this.bootstrapper.Dispose();
     }
 }
