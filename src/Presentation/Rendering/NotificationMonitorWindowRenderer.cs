@@ -83,15 +83,22 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         }
 
         var title = "XIV Submarines — Notifications";
-        if (!ImGui.Begin(title, ref this.isVisible, ImGuiWindowFlags.AlwaysAutoResize))
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new Vector2(640f, 500f));
+        ImGui.SetNextWindowSize(new Vector2(780f, 560f), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSizeConstraints(new Vector2(640f, 420f), new Vector2(1100f, 860f));
+
+        if (!ImGui.Begin(title, ref this.isVisible))
         {
             ImGui.End();
+            ImGui.PopStyleVar();
             return;
         }
 
         this.RenderContent();
+        this.RenderResizeHandle();
 
         ImGui.End();
+        ImGui.PopStyleVar();
     }
 
     public void RenderInline()
@@ -117,175 +124,76 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
         ImGui.PushStyleColor(ImGuiCol.ChildBg, UiTheme.PanelBg);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 6f);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10f, 8f));
-        var changed = false;
-        if (!ImGui.BeginChild("##notification_settings_panel", Vector2.Zero, true))
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(12f, 6f));
+
+        var windowHeight = ImGui.GetWindowHeight();
+        var panelHeight = windowHeight > 0f ? windowHeight * 0.55f : 360f;
+        panelHeight = MathF.Max(panelHeight, 280f);
+        panelHeight = MathF.Min(panelHeight, 460f);
+
+        if (ImGui.BeginChild("##notification_settings_panel", new Vector2(0f, panelHeight), true, ImGuiWindowFlags.AlwaysUseWindowPadding))
         {
+            var changed = false;
+            var spacing = ImGui.GetStyle().ItemSpacing.X;
+            var width = ImGui.GetContentRegionAvail().X;
+            var twoColumnThreshold = 620f;
+            var twoColumn = width >= twoColumnThreshold;
+            var cardWidth = twoColumn
+                ? MathF.Max((width - spacing) * 0.5f, 280f)
+                : MathF.Max(width, 280f);
+
+            var discordEnabled = this.editingSettings.EnableDiscord;
+            var notionEnabled = this.editingSettings.EnableNotion;
+
+            if (twoColumn)
+            {
+                ImGui.BeginGroup();
+                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth);
+                ImGui.SameLine(0f, spacing);
+                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth);
+                ImGui.EndGroup();
+            }
+            else
+            {
+                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth);
+                ImGui.Spacing();
+                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth);
+            }
+
+            this.editingSettings.EnableDiscord = discordEnabled;
+            this.editingSettings.EnableNotion = notionEnabled;
+
+            ImGui.Separator();
+            changed |= this.RenderDeliveryOptions();
+
+            ImGui.Separator();
+            this.RenderIdentityRecoveryControls();
+
+            ImGui.Separator();
+            changed |= this.RenderDeveloperOptions();
+
+            if (changed)
+            {
+                this.settingsDirty = true;
+            }
+
+            ImGui.BeginDisabled(!this.settingsDirty);
+            if (ImGui.Button("通知設定を保存", new Vector2(180f, 0f)))
+            {
+                this.ApplySettings();
+            }
+            ImGui.EndDisabled();
+            ImGui.SameLine();
+            ImGui.TextColored(UiTheme.MutedText, "保存すると即座に Dalamud へ反映されます。");
+
+            ImGui.Separator();
+            this.RenderForceNotifyDiagnosticsSection();
+
             ImGui.EndChild();
-            ImGui.PopStyleVar(2);
-            ImGui.PopStyleColor();
-            return;
         }
 
-        var enableDiscord = this.editingSettings.EnableDiscord;
-        if (ImGui.Checkbox("Discord 通知を有効化", ref enableDiscord))
-        {
-            this.editingSettings.EnableDiscord = enableDiscord;
-            changed = true;
-        }
-        changed |= this.RenderUrlInput("Discord Webhook URL", this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value);
-        var discordStatusText = this.editingSettings.EnableDiscord ? "Discord 通知は有効です" : "Discord 通知は無効です";
-        var discordStatusColor = this.editingSettings.EnableDiscord ? UiTheme.SuccessText : UiTheme.ErrorText;
-        ImGui.TextColored(discordStatusColor, discordStatusText);
-
-        ImGui.Separator();
-        var enableNotion = this.editingSettings.EnableNotion;
-        if (ImGui.Checkbox("Notion 通知を有効化", ref enableNotion))
-        {
-            this.editingSettings.EnableNotion = enableNotion;
-            changed = true;
-        }
-        changed |= this.RenderUrlInput("Notion Webhook URL", this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value);
-        var notionStatusText = this.editingSettings.EnableNotion ? "Notion 通知は有効です" : "Notion 通知は無効です";
-        var notionStatusColor = this.editingSettings.EnableNotion ? UiTheme.SuccessText : UiTheme.ErrorText;
-        ImGui.TextColored(notionStatusColor, notionStatusText);
-
-        ImGui.Separator();
-        var retention = this.editingSettings.DeadLetterRetentionLimit;
-        if (ImGui.SliderInt("デッドレター保持数", ref retention, 8, 256))
-        {
-            this.editingSettings.DeadLetterRetentionLimit = retention;
-            changed = true;
-        }
-
-        var notifyCompleted = this.editingSettings.NotifyVoyageCompleted;
-        if (ImGui.Checkbox("航海完了の通知を送信", ref notifyCompleted))
-        {
-            this.editingSettings.NotifyVoyageCompleted = notifyCompleted;
-            changed = true;
-        }
-
-        var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
-        if (ImGui.Checkbox("出航直後の通知を送信", ref notifyUnderway))
-        {
-            this.editingSettings.NotifyVoyageUnderway = notifyUnderway;
-            changed = true;
-        }
-
-        var batchWindowSeconds = this.editingDiscordBatchWindowSeconds;
-        if (ImGui.SliderFloat("Discord バッチ間隔 (秒)", ref batchWindowSeconds, 0.5f, 15f, "%.1f"))
-        {
-            this.editingDiscordBatchWindowSeconds = batchWindowSeconds;
-            this.editingSettings.DiscordBatchWindowSeconds = Math.Round(batchWindowSeconds, 1);
-            changed = true;
-        }
-
-        this.RenderIdentityRecoveryControls();
-
-        if (ImGui.CollapsingHeader("開発オプション", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            ImGui.TextDisabled("テスト用の一時的な動作変更です。通常運用では無効のままにしてください。");
-            var forceNotify = this.editingSettings.ForceNotifyUnderway;
-            if (ImGui.Checkbox("出航中でも通知を送信する (開発用)", ref forceNotify))
-            {
-                this.editingSettings.ForceNotifyUnderway = forceNotify;
-                changed = true;
-            }
-
-            if (ImGui.Button("選択キャラクターの通知を即時送信"))
-            {
-                this.TriggerManualNotification();
-            }
-        }
-
-        if (changed)
-        {
-            this.settingsDirty = true;
-        }
-
-        ImGui.BeginDisabled(!this.settingsDirty);
-        if (ImGui.Button("通知設定を保存"))
-        {
-            this.ApplySettings();
-        }
-        ImGui.EndDisabled();
-
-        this.RenderForceNotifyDiagnosticsSection();
-
-        ImGui.EndChild();
         ImGui.PopStyleVar(2);
         ImGui.PopStyleColor();
     }
-
-    private void RenderIdentityRecoveryControls()
-    {
-        ImGui.Separator();
-        ImGui.TextColored(UiTheme.MutedText, "キャラクター名の復元");
-
-        if (ImGui.Button("キャラクター名を再取得"))
-        {
-            var refreshed = this.RecoverCharacterIdentities();
-            this.ShowIdentityToast(refreshed);
-        }
-
-        ImGui.SameLine();
-        ImGui.TextColored(UiTheme.MutedText, "設定ファイルが欠損した際に使用してください。");
-        this.RenderIdentityToast();
-        ImGui.Spacing();
-    }
-
-    private int RecoverCharacterIdentities()
-    {
-        var snapshots = this.snapshotCache.GetAll();
-        var refreshed = 0;
-
-        foreach (var kvp in snapshots)
-        {
-            var characterId = kvp.Key;
-            var snapshot = kvp.Value;
-            var before = this.characterRegistry.GetIdentity(characterId);
-            var beforeMissing = before is null
-                || string.IsNullOrWhiteSpace(before.Name)
-                || string.IsNullOrWhiteSpace(before.World);
-            this.characterRegistry.RegisterSnapshot(snapshot);
-            var after = this.characterRegistry.GetIdentity(characterId);
-            var afterMissing = after is null
-                || string.IsNullOrWhiteSpace(after.Name)
-                || string.IsNullOrWhiteSpace(after.World);
-            if (beforeMissing && !afterMissing)
-            {
-                refreshed++;
-            }
-        }
-
-        return refreshed;
-    }
-
-    // 即席のトーストとしてステータスを短時間だけ表示します。
-    private void ShowIdentityToast(int refreshedCount)
-    {
-        this.identityToastMessage = refreshedCount > 0
-            ? $"{refreshedCount} 件のキャラクター名を更新しました。"
-            : "更新可能なキャラクター名はありません。";
-        this.identityToastExpiryUtc = DateTime.UtcNow.AddSeconds(4);
-    }
-
-    private void RenderIdentityToast()
-    {
-        if (this.identityToastMessage is null)
-        {
-            return;
-        }
-
-        if (DateTime.UtcNow > this.identityToastExpiryUtc)
-        {
-            this.identityToastMessage = null;
-            return;
-        }
-
-        ImGui.SameLine();
-        ImGui.TextColored(UiTheme.AccentPrimary, this.identityToastMessage);
-    }
-
 
 }

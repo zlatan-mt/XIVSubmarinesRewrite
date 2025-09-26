@@ -38,3 +38,8 @@
 - ステージング Zap のページデータベースで `Remaining` カラムをテンポラリ表示させ、Webhook 受信直後の値をスクリーンショット取得する。
 - Zap 履歴の raw JSON をダウンロードし、`ArrivalLocal` と `Remaining` のフォーマットが ISO8601 / `PT#H#M` 表記かを確認し、差異があればここに記録する。
 - 互換性問題が無い場合は `docs/notifications/notion_payload.json` にサンプルを追記し、sessions ノートへ検証完了を記録する。
+
+## 2025-09-25 CLI 自動検証メモ (Optional)
+- 現在は外部 Webhook を使用しないため、`tools/NotionWebhookVerifier` はオプション扱いとする。
+- 将来 Zapier 等と連携したくなった場合のみ `dotnet run --project tools/NotionWebhookVerifier/NotionWebhookVerifier.csproj -- --webhook=<url> --run=verify-<name>` を実行し、`logs/<date>/notion-verifier/<run>/` を参照する。
+- `summary.json` の `Success` や `Issues` を利用した検証フローは温存しておくが、通常運用では実行しない。

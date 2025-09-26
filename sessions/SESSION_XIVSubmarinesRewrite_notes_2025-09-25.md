@@ -18,35 +18,51 @@
 
 ## 実施内容
 - `tools/DiscordCycleSimulator/`  
-  `DiscordCycleSimulator.csproj` と `Program.cs` を新規作成。CLI で 4 隻サイクルの completion→underway を再生し、集約結果 JSON (`discord/`, `notion/`)、プレースホルダー PNG、`manifest.json`、`simulation.log` を生成するように実装。  
-  `SimulationOptions` で出力パスやサイクル数、キャラクター ID を CLI 引数から設定可能にした。
-- `src/Integrations/Notifications/NotionWebhookClient.cs`  
-  ファイル冒頭へヘッダーコメントを追加。`metadata` の各フィールドを文字列変換 (`Status = notification.Status.ToString()`) へ統一し、契約テストでの文字列チェックに対応。  
-  既存ロギングは変更せず、出力 JSON のキーは camelCase を維持。
+  `Program.cs` を再構成し、`SimulationOptions`・`SimulationReportWriter`・`SimulationManifest` へ分割。`--validate` オプションで `summary.json` と `report.html` を生成し、集約バリデーションを自動化した。  
+  ログ出力とプレースホルダー PNG を `SimulationInfrastructure` へ切り出し、ファイル長 300 行以下を維持した。
+- `docs/notifications/discord_batch_window_plan.md`  
+  CLI 手順と `summary.json` / `report.html` の読み方を追記。Phase5 以降の検証フローを完全に自動化モードへ更新した。
+- `tools/NotionWebhookVerifier/`  
+  新規 CLI を追加。ステージング Webhook へ送信し `request.json`・`response.json`・`summary.json`・`verifier.log` を保存できるようにした。  
+  `RecordingHandler` で HTTP ボディをキャプチャし、`VerifierSummary` で全フィールドが文字列化されているかを検証する。
+- `docs/notifications/notion_payload_plan.md`  
+  新しい CLI の運用メモを追加し、Zap 実機検証手順を更新した。
 - `tests/XIVSubmarinesRewrite.Tests/NotionWebhookContractTests.cs`  
-  新しいヘッダーコメントとユニットテストを追加。HTTP ハンドラで送信 JSON を捕捉し、`payload` 内の値が全て string/null、`metadata` が string だけで構成されていること、`Remaining` が空でないこと、ログに情報レベルのメッセージが出ることを検証。  
-  `RecordingHttpMessageHandler` を async 化し、`TestLogSink` に記録用リストを追加。
-- `src/Presentation/Rendering/UiTheme.cs`  
-  `ErrorText` と `PanelBg` を追加し、テーマ色を拡張。
-- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs`  
-  ヘッダーコメントを追記。設定セクションを `ImGui.BeginChild` でラップし、`PanelBg` と丸み付きレイアウトを適用。  
-  Discord/Notion の有効状態テキストを `SuccessText` / `ErrorText` で色分け表示。
-- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.Diagnostics.cs`  
-  ForceNotify 残り時間の表示を色分け (5 分未満 赤、1 時間未満 オレンジ、それ以外は白系) に変更し、状態把握を容易化。
+  環境変数 `XIV_NOTION_WEBHOOK_URL` が設定されている場合のみライブ Webhook へ送信するテストを追加した。未設定時は早期 return でスキップする。
+- `tools/RendererPreview/` と `tests/Playwright/`  
+  UiTheme からカラーサンプル HTML/JSON を出力する CLI を追加し、Playwright テスト (`ui-theme.spec.ts`) で `data-expected` と computed style を比較する仕組みを整備した。  
+  `package.json` と `playwright.config.ts` を新規作成し、Chromium をローカルにインストールして実行できるようにした。
 
 ## テスト結果
-- `dotnet run --project tools/DiscordCycleSimulator/DiscordCycleSimulator.csproj -- --cycles=1 --run=test-run`  
-  成功。`logs/2025-09-25/notification-cycle/test-run/` に JSON, PNG, `simulation.log`, `manifest.json` が生成され、ログ内で 1 サイクルの集約完了を確認。
+- `dotnet run --project tools/DiscordCycleSimulator/DiscordCycleSimulator.csproj -- --run=cycle-validate --validate`  
+  成功。`logs/2025-09-25/notification-cycle/cycle-validate/meta/summary.json` の `AllCyclesValid` = `true` を確認。`report.html` も生成された。
 - `dotnet test tests/XIVSubmarinesRewrite.Tests/XIVSubmarinesRewrite.Tests.csproj`  
-  成功。Notion 契約テストを含む 19 件がパス。`Notion webhook dispatched` ログ出力も確認。
+  成功。Notion 契約テストとライブ Webhook 条件付きテストを含む 20 件がパス。
+- `npm test` (Playwright) in `tests/Playwright`  
+  成功。`RendererPreview` が生成した `report.html` を読み込み、各 swatch の色がテーマ定義と一致することを検証。
+- `tools/NotionWebhookVerifier` はステージング Webhook 未提供のため実行待ち。Summary 生成まではローカルで確認済み。
 
 ## 次のアクション
-1. Dalamud 上で新しい設定パネル背景と ForceNotify カラーが想定どおりかをスクリーンショット付きで確認する。  
-2. CLI シミュレーターの出力を `docs/notifications/discord_batch_window_plan.md` のデータ採取フローへ組み込み、自動化手順を追記する。  
-3. Notion 実機連携で新しい `metadata.Status` 文字列化が Zap 側で受理されるかを検証し、結果を docs と sessions へ反映する。  
-4. Playwright などで UI カラーテストを自動化する仕組みを検討し、次フェーズの計画案に盛り込む。
+1. `tools/DiscordCycleSimulator` の `--validate` 実行結果を定期的に確認し、`summary.json` を CI へ取り込む。  
+2. Dalamud 実機ログで `ageMs` / `overshootMs` を再採取し、CLI との乖離が無いか `docs/notifications/discord_batch_window_plan.md` の表へ反映する。  
+3. RendererPreview 出力のスクリーンショットを UI ガイドライン資料へ貼り付け、色設計レビューを簡略化する。  
+4. 外部 Webhook を使用する場合のみ `tools/NotionWebhookVerifier` を再有効化する (現状は実行不要)。
 
 ## 備考
-- CLI シミュレーターのプレースホルダー PNG は 1px 画像を埋め込み。スクリーンショット差し替え時は置換するだけで対応可能。  
-- Notion 対応では 64bit 値排除の方針に沿って全てを文字列へ変換済み。Zap 側の数値演算が必要な場合は別フィールド追加で対応予定。
+- `summary.json` と `report.html` は Phase5 の完了条件として保存必須。セッションログにもパスを追記する。  
+- Playwright テストは `.artifacts/playwright/` を生成するため、CI でキャッシュ整理が必要。  
+- Notion Webhook 検証 CLI はレスポンス Body を `response.json` に記録するので、Zap 側のリグレッションを追いやすい。
 
+---
+
+## 2025-09-26 通知 UI 再設計メモ
+- 通知タブは「通知設定」「通知キュー」の 2 セクションで構成。最上段に `通知設定` ヘッダーを配置し、閉じれば設定パネル全体が畳まれる。  
+- 通知設定パネル内では以下の順序に整理。  
+  1. **通知チャンネルカード** — Discord/Notion の 2 枚を横幅 620px 以上で横並び、それ未満で縦積みに自動切替。カード内は `サービス名 + ACTIVE/OFF` 表示、右隣に「通知を送信」チェックボックス、直下に Webhook URL 入力欄をフル幅で配置。  
+  2. **配信オプションテーブル** — デッドレター保持数スライダー、航海完了・出航直後の通知トグル、Discord バッチ間隔スライダーを 2 列テーブルで掲載。  
+  3. **キャラクター名復元** — 「キャラクター名を再取得」ボタンとトースト表示。  
+  4. **開発オプション** — ForceNotify 設定と手動通知ボタンをツリー内にまとめた。  
+  5. **保存・診断** — `通知設定を保存` ボタン（dirty 状態のみ活性）と説明テキスト、下部に ForceNotify 診断を表示。  
+- ウィンドウ右下にリサイズハンドルを追加し、最小 640×420 / 最大 1100×860 の範囲でドラッグ調整可能。初期サイズは 780×560 に設定。  
+- 通知キューセクションは従来通りテーブル表示。ウィンドウの残り高さに自動追従し、保持中・デッドレター件数、再送ボタン、末尾にテキストサマリを表示する。  
+- 現状の課題: カード内に僅かな空間が残っており、Webhook URL の下部余白をさらに圧縮する必要あり。横幅 640px でも URL 入力が完全表示できるが、今後ラベルや補助説明を入れる場合は折り返しを検討する。
