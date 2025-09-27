@@ -29,5 +29,5 @@
 - `dotnet build -c Release /p:DevPluginsDir=` 成功 (DevPluginsDir copy を抑止)。  
 - `dotnet test` は sandbox の Socket 制限で abort、ローカル再実行が必要。  
 - `npm test` は Playwright ワーカーが sandbox で終了。ローカル権限環境で再確認する。  
-- 公開前に CHANGELOG を整備し、GitHub Releases で `v1.0.0` を作成する。  
-
+- 公開前に CHANGELOG を整備し、GitHub Releases で `v1.0.0` を作成する。
+- RendererPreview ツールを復元し、`npm test` と `npm run test:ui:headed` が成功。  

@@ -17,7 +17,11 @@ tests/
 test-results/
 obj/
 bin/
-tools/
+tools/*
+!tools/RendererPreview/
+!tools/RendererPreview/**
+tools/RendererPreview/bin/
+tools/RendererPreview/obj/
 Local.props
 Local.props.example
 package.json
