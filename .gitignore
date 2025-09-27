@@ -14,3 +14,7 @@ sessions/
 vendor/
 docs/
 tests/
+test-results/
+obj/
+bin/
+tools/
