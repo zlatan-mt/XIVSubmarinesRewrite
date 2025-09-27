@@ -18,3 +18,7 @@ test-results/
 obj/
 bin/
 tools/
+Local.props
+Local.props.example
+package.json
+icon.original.png
