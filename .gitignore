@@ -9,10 +9,10 @@ npm-debug.log*
 store/
 logs/
 AGENTS.md
-plans/
-sessions/
 vendor/
 docs/
+plans/
+sessions/
 tests/
 test-results/
 obj/
