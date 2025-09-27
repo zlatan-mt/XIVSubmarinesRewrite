@@ -1,11 +1,11 @@
-﻿[
+[
   {
     "Author": "TBD",
     "Name": "XIV Submarines Rewrite",
     "Description": "Work-in-progress rewrite scaffold for the XIV Submarines toolset.",
     "InternalName": "XIVSubmarinesRewrite",
-    "AssemblyVersion": "0.1.0",
-    "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesReturn",
+    "AssemblyVersion": "1.0.0",
+    "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 13,
     "Punchline": "Next-generation submarine workshop tools (WIP)",

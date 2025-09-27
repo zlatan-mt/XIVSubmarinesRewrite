@@ -1,15 +1,20 @@
-﻿{
+{
   "Name": "XIV Submarines Rewrite",
   "InternalName": "XIVSubmarinesRewrite",
   "Author": "TBD",
   "Punchline": "Next-generation submarine workshop tools (WIP)",
-  "Description": "Work-in-progress rewrite of the XIV Submarines utility. This manifest will be updated alongside the new implementation.",
+  "Description": "Polished single-window UI with Playwright coverage helpers and release-ready metadata.",
   "ApplicableVersion": "any",
   "DalamudApiLevel": 13,
   "AssemblyName": "XIVSubmarinesRewrite.dll",
-  "AssemblyVersion": "0.1.0",
-  "Tags": ["rewrite", "wip"],
+  "AssemblyVersion": "1.0.0",
+  "Tags": [
+    "rewrite",
+    "wip"
+  ],
   "IconUrl": "icon.png",
-  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesReturn",
-  "ImageUrls": ["icon.png"]
+  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
+  "ImageUrls": [
+    "icon.png"
+  ]
 }
