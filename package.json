@@ -1,0 +1,14 @@
+{
+  "name": "xivsubmarinesrewrite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:ui",
+    "test:ui": "cd tests/Playwright && npx playwright test",
+    "test:ui:headed": "cd tests/Playwright && npx playwright test --headed",
+    "playwright:install": "cd tests/Playwright && npx playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}

@@ -12,7 +12,7 @@
   - [ ] DEV トグル ON/OFF で「開発」タブ表示の出現・非表示
   - [ ] リサイズ後に再オープンし、径路で直近サイズが復元される
 - [ ] `tools/RendererPreview` または既存 CLI で Playwright が利用するダミー起動フローを更新（単一ウィンドウ構成に追従）
-- [ ] CI/ローカルで `npm test` が通るよう README とスクリプトを更新
+- [x] CI/ローカルで `npm test` が通るよう README とスクリプトを更新 (ルート `npm test` が Playwright を呼び出すよう調整、README に手順を追記)
 
 ## Phase7 — Overview/通知レイアウトの磨き込み
 - [ ] `MainWindowRenderer`／`OverviewWindowRenderer` のヘッダを整備し、バージョン・アクティブキャラクターの表示位置を整理

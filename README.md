@@ -61,6 +61,15 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 
 チャットコマンドが動作しない場合は Dalamud でプラグインが有効化されているか確認します。
 
+## 開発者向けテスト
+ルートの npm スクリプトで Playwright と .NET の検証を素早く実行できます。
+
+- `npm run test:ui` で Playwright シナリオをヘッドレス実行します。
+- `npm run test:ui:headed` でウィンドウを開いたままデバッグします。
+- `npm run playwright:install` で Playwright ブラウザを取得します。
+
+初回は `npm install --prefix tests/Playwright` を実行して依存を揃えてください。
+
 ## 既知の制限
 再構築中のため UI や文面は予告なく変わります。
 
