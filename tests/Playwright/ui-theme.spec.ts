@@ -1,18 +1,13 @@
 // apps/XIVSubmarinesRewrite/tests/Playwright/ui-theme.spec.ts
 // UiTheme プレビューの HTML を検証する Playwright テストです
 // RendererPreview が出力した色情報がテーマと一致することを自動で確認するため存在します
-// RELEVANT FILES: apps/XIVSubmarinesRewrite/tools/RendererPreview/Program.cs, apps/XIVSubmarinesRewrite/src/Presentation/Rendering/UiTheme.cs
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/tests/Playwright/utils/renderer-preview.ts, apps/XIVSubmarinesRewrite/tools/RendererPreview/Program.cs
 
 import { test, expect } from '@playwright/test';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
+import { generateRendererPreviewArtifacts, type RendererPreviewArtifacts } from './utils/renderer-preview';
 
-const repoRoot = path.resolve(__dirname, '..', '..');
-const artifactRoot = path.resolve(__dirname, '.artifacts');
-const runRoot = path.join(artifactRoot, 'playwright');
-const htmlPath = path.join(runRoot, 'report.html');
-const jsonPath = path.join(runRoot, 'swatches.json');
+let artifacts: RendererPreviewArtifacts;
 
 function normalizeColor(value: string | null): string {
   if (!value) {
@@ -33,23 +28,18 @@ function harmonizeColor(value: string): string {
 }
 
 test.beforeAll(() => {
-  if (fs.existsSync(artifactRoot)) {
-    fs.rmSync(artifactRoot, { recursive: true, force: true });
-  }
-
-  const command = `dotnet run --project tools/RendererPreview/RendererPreview.csproj -- --output=${artifactRoot} --run=playwright`;
-  execSync(command, { stdio: 'inherit', cwd: repoRoot });
+  artifacts = generateRendererPreviewArtifacts({ runName: 'ui-theme' });
 });
 
 test('UiTheme colors match RendererPreview swatches', async ({ page }) => {
-  expect(fs.existsSync(htmlPath)).toBe(true);
-  expect(fs.existsSync(jsonPath)).toBe(true);
+  expect(fs.existsSync(artifacts.htmlPath)).toBe(true);
+  expect(fs.existsSync(artifacts.jsonPath)).toBe(true);
 
-  const artifact = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as { Swatches?: Array<{ token: string }>; swatches?: Array<{ token: string }> };
+  const artifact = JSON.parse(fs.readFileSync(artifacts.jsonPath, 'utf-8')) as { Swatches?: Array<{ token: string }>; swatches?: Array<{ token: string }> };
   const swatches = artifact.Swatches ?? artifact.swatches;
   expect(Array.isArray(swatches)).toBe(true);
 
-  await page.goto(`file://${htmlPath}`);
+  await page.goto(`file://${artifacts.htmlPath}`);
 
   const handles = await page.$$('[data-token]');
   expect(handles.length).toBe(swatches!.length);

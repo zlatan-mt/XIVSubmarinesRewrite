@@ -1,0 +1,12 @@
+{
+  "name": "xivsubmarinesrewrite-playwright",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:main-window": "playwright test --grep \"@main-window\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}

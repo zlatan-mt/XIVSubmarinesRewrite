@@ -25,6 +25,7 @@
 - 自動 UI テスト (Phase6 項目) はブロッキングでは無いが、Playwright シナリオ作成タイミングを次回チェックインで再確認する。
 
 ## 1.0.0 リリース準備メモ
+- RendererPreview CLI 呼び出しをフィクスチャ用ヘルパーに集約し、Playwright スクリプトを整理 (実行はローカル権限で継続)。  
 - バージョンを 1.0.0 へ更新し、manifest / plugin / repo メタデータを配布向けに整備。  
 - `dotnet build -c Release /p:DevPluginsDir=` 成功 (DevPluginsDir copy を抑止)。  
 - `dotnet test` は sandbox の Socket 制限で abort、ローカル再実行が必要。  
