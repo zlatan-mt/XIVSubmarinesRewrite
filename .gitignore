@@ -13,7 +13,12 @@ vendor/
 docs/
 plans/
 sessions/
-tests/
+tests/*
+!tests/Playwright/
+!tests/Playwright/**
+tests/Playwright/node_modules/
+tests/Playwright/test-results/
+tests/Playwright/.artifacts/
 test-results/
 obj/
 bin/

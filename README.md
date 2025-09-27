@@ -67,6 +67,7 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 - `npm run test:ui` で Playwright シナリオをヘッドレス実行します。
 - `npm run test:ui:headed` でウィンドウを開いたままデバッグします。
 - `npm run playwright:install` で Playwright ブラウザを取得します。
+- `npm test -- --grep "@main-window"` でメインウィンドウのシナリオを個別実行します。
 
 初回は `npm install --prefix tests/Playwright` を実行して依存を揃えてください。
 
