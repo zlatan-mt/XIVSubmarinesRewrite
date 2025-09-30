@@ -1,34 +1,64 @@
 <!-- apps/XIVSubmarinesRewrite/sessions/SESSION_XIVSubmarinesRewrite_notes_2025-09-27.md -->
 <!-- XIV Submarines Rewrite の 2025-09-27 作業サマリ -->
-<!-- Phase7 UI 磨き込みの進捗共有と次の段取りを整理するため存在します -->
-<!-- RELEVANT FILES: apps/XIVSubmarinesRewrite/plans/phase6_main_window_followup_plan_2025-09-26.md, apps/XIVSubmarinesRewrite/src/Presentation/Rendering/MainWindowRenderer.cs -->
+<!-- Phase6 UI 自動テスト整備と 1.0.0 リリース準備の進捗共有のため存在します -->
+<!-- RELEVANT FILES: apps/XIVSubmarinesRewrite/plans/phase6_to_phase9_execution_plan_2025-09-27.md, apps/XIVSubmarinesRewrite/tests/Playwright/ui-theme.spec.ts, apps/XIVSubmarinesRewrite/tests/Playwright/main-window.spec.ts -->
 
 # 2025-09-27 作業まとめ
 
 ## 元の実装計画
-- `Phase6 メインウィンドウ改善計画` のうち Phase7 以降へ進み、Overview/通知レイアウトを磨き込む。  
-- メインウィンドウのヘッダ整理、概要テーブルの折返しやコピー性改善、通知フォームの余白統一、DEV タブの操作系拡張を行う。  
+- `Phase6 メインウィンドウ改善計画` と `phase6_to_phase9_execution_plan_2025-09-27.md` に沿い、Playwright を用いた slash コマンド・DEV トグル・ウィンドウ永続化の自動検証を揃える。  
+- RendererPreview CLI で UiTheme をエクスポートし、色検証を自動化するテスト基盤を固める。  
+- CI に `npm test` を組み込み、1.0.0 リリース準備の前提となる UI テスト結果を常時収集できるようにする。  
 
 ## 変更内容 (フォルダ/ファイル単位)
-- `src/Presentation/Rendering/MainWindowRenderer.cs` — ツールバーを三分割し、バージョン表示とアクティブキャラクター名を明示。DEV トグルにツールチップと右寄せ配置を追加。  
-- `src/Presentation/Rendering/OverviewWindowRenderer.cs` — 選択キャラクター名を取得する `GetSelectedCharacterDisplayName()` を公開し、航路セルに折り返し・ダブルクリックコピー対応を実装。バージョン表示はツールバー側へ集約。  
-- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs` — レイアウト計測結果を更新、カード高さ算出を新ロジックへ連動。  
-- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.SettingsLayout.cs` — チャンネルカードの最小高さを定数化し、DEV タブに Discord バッチ間隔スライダーとヒントを追加。通知設定タブでも保存済み値を示す注記を追加。  
-- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.LayoutDebug.cs` — 設計メトリクスを再計算するための最低高さ/スタック間隔ロジックを更新し、カード高さ決定を二列・一列で共通化。  
+- `.github/workflows/ui-tests.yml` — GitHub Actions 上で Node 20 と .NET 9.0 をセットアップし、`npm run playwright:install`→`npm test` を実行。`test-results`・`playwright-report`・`.artifacts` をアーティファクトとして保存するワークフローを新規追加。  
+- `tests/Playwright/fixtures/main-window-fixture.ts` — localStorage を使えない環境向けにメモリストアへフォールバックする処理と、`dispose` 時の `reset()` 呼び出しを追加して、CI でもウィンドウ復元シナリオが安定して通るように調整。  
+- `tools/RendererPreview/RendererPreview.csproj` — XML 宣言を整理し、`UiTheme.cs` をリンクする形で直接参照するよう変更。Dalamud DLL がなくても CLI がビルドできるようにした。  
+- `plans/phase6_to_phase9_execution_plan_2025-09-27.md` — Phase6 の CI 追加タスクと Playwright テスト 3 種（install / test / headed）をすべて完了済みチェックへ更新。  
+- `sessions/SESSION_XIVSubmarinesRewrite_notes_2025-09-27.md` — 本メモに最新版の進捗・テスト結果・今後の計画を記録。  
 
 ## テスト結果
-- `dotnet build` — 成功。  
+- `npm run playwright:install` — Playwright ブラウザ資材を取得し、成功。  
+- `npm test` — main-window シナリオと UiTheme 検証を headless で実行。localStorage フォールバック後は 4 ケースすべて成功。  
+- `npm run test:ui:headed` — headed モードで同一シナリオを確認。アーティファクト生成ログを含めて 4 ケース通過。  
 
 ## 次に行う予定・課題
-- Phase7 の残り: 通知フォーム内の不要要素最終確認、およびヘッダーの視認性リファイン (カラー・アイコン検討)。  
-- Phase8 へ向けた準備: `UiPreferences` に DEV 操作ログを追加する設計メモ起案、通知シミュレーション操作の要件洗い出し。  
-- 自動 UI テスト (Phase6 項目) はブロッキングでは無いが、Playwright シナリオ作成タイミングを次回チェックインで再確認する。
+- 新ワークフローが `main` へ push された際に成功するか監視し、アーティファクト内容を確認する。  
+- Phase7 の UI 磨き込み（配色コントラスト測定、Notification フォーム整理、カード高さロジック集約）をプロトタイプから着手する。  
+- Phase8 の DEV タブ操作ログと Playwright `@dev` シナリオの仕様整理を進める。  
+- Phase9 の CHANGELOG 草案と Release ビルド/パッケージング手順を CI へ組み込む計画を立案する。  
 
-## 1.0.0 リリース準備メモ
-- RendererPreview CLI 呼び出しをフィクスチャ用ヘルパーに集約し、Playwright スクリプトを整理 (実行はローカル権限で継続)。  
-- バージョンを 1.0.0 へ更新し、manifest / plugin / repo メタデータを配布向けに整備。  
-- `dotnet build -c Release /p:DevPluginsDir=` 成功 (DevPluginsDir copy を抑止)。  
-- `dotnet test` は sandbox の Socket 制限で abort、ローカル再実行が必要。  
-- `npm test` は Playwright ワーカーが sandbox で終了。ローカル権限環境で再確認する。  
-- 公開前に CHANGELOG を整備し、GitHub Releases で `v1.0.0` を作成する。
-- RendererPreview ツールを復元し、`npm test` と `npm run test:ui:headed` が成功。  
+## 参考リンク
+- `plans/phase6_to_phase9_execution_plan_2025-09-27.md` — 現行チェックリスト。  
+- `tests/Playwright/main-window.spec.ts` / `fixtures/main-window-fixture.ts` — メインウィンドウ自動テスト。  
+- `tests/Playwright/utils/renderer-preview.ts` — RendererPreview アーティファクト生成ヘルパー。  
+- `.github/workflows/ui-tests.yml` — Playwright CI ワークフロー。  
+
+## Phase7 UI 磨き込みセッション (2025-09-29)
+
+### 元の実装計画
+- `phase6_to_phase9_execution_plan_2025-09-27.md` の Phase7 項目に沿い、メインウィンドウの配色とヘッダー体験を洗練させる。  
+- Notification 設定タブのカード高さやレイアウト分岐を共通化し、余白計算を単純化する。  
+- Overview テーブルの航路表示を折り返し可能にし、コピー操作の扱いを統一する。  
+- UiTheme のカラーパレットを見直し、コントラスト測定を自動化するテストを追加する。  
+
+### 変更内容 (フォルダ/ファイル単位)
+- `src/Presentation/Rendering/UiTheme.cs` — ウィンドウ・ツールバー・枠線の色を追加し、WCAG コントラスト計算ユーティリティを実装。  
+- `src/Presentation/Rendering/MainWindowRenderer.cs` — 新テーマ色を適用し、ヘッダーでコントラスト比を可視化しつつ DEV ボタンを再設計。  
+- `src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs` + `.SettingsLayout.cs` + `.LayoutDebug.cs` — カードレイアウト算出をヘルパー化し、Discord バッチ間隔とデッドレター保持数をスライダー/ドラッグ入力へ統一。  
+- `src/Presentation/Rendering/OverviewWindowRenderer.cs` — 航路ラベルにゼロ幅スペースを挿入して折り返しやすくし、コピー用テキストを追加。  
+- `src/Presentation/Rendering/OverviewRowFormatter.cs` (新規) — Overview 行の表示/コピー書式を共通化するユーティリティを作成。  
+- `tests/XIVSubmarinesRewrite.Tests/OverviewRowFormatterTests.cs` — コピー文字列と折り返し用ゼロ幅スペースの挙動を検証するユニットテストを追加。  
+- `tests/XIVSubmarinesRewrite.Tests/UiThemeContrastTests.cs` — テーマ色のコントラスト比が 4.5 以上であることを確認。  
+- `tests/Playwright/fixtures/main-window-fixture.ts` — localStorage 非対応環境でメモリフォールバックする仕組みを明確化し、リセット処理を共通化。  
+- `tools/RendererPreview/Program.cs` + `tools/RendererPreview/RendererPreview.csproj` — UiTheme をリンク参照しつつスウォッチ出力を拡充し、Playwright 検証と同期。  
+
+### テスト結果
+- `npm run test:ui` — Playwright 4 ケース成功。RendererPreview の新スウォッチも検証済み。  
+- `dotnet build` — Dalamud/Lumina 参照不足で失敗。依存 DLL を復旧後にリトライが必要。  
+
+### 次のアクション
+- Dalamud 依存を含む環境で `dotnet test` を実行し、新規ユニットテストを検証する。  
+- Notification タブのスクリーンショット比較を更新し、Phase7 の UI 差分を共有リポジトリへ添付する。  
+- Phase7 未着手の Notification フォーム整理と UiTheme スクリーンショット整備を進める。  
+- Phase8 の DEV タブ操作ログ仕様と Playwright `@dev` シナリオ設計をまとめ、次回セッション計画へ反映する。  

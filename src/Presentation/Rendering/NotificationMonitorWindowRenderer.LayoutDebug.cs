@@ -16,7 +16,8 @@ public sealed partial class NotificationMonitorWindowRenderer
 {
     // Shared layout constants keep card rendering and debug metrics aligned.
     private const float ChannelCardMinWidth = 280f;
-    private const float ChannelCardHeight = 132f;
+    private const float ChannelCardBaseHeight = 148f;
+    private const float ChannelCardMinHeight = 120f;
 
     // Latest layout snapshot helps Phase9-A collect concrete measurements.
     private SettingsLayoutDebugSnapshot settingsLayoutDebug = SettingsLayoutDebugSnapshot.Empty;
@@ -123,6 +124,7 @@ public sealed partial class NotificationMonitorWindowRenderer
         public float CardWidth { get; }
         public float CardHeight { get; }
         public float StackSpacingY { get; }
+        public int ColumnCount => this.UsesTwoColumn ? 2 : 1;
 
         public static SettingsLayoutMetrics Create(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold)
         {
@@ -131,15 +133,15 @@ public sealed partial class NotificationMonitorWindowRenderer
             var singleColumnWidth = MathF.Max(availableWidth, ChannelCardMinWidth);
             var cardWidth = usesTwoColumn ? twoColumnWidth : singleColumnWidth;
 
-            var baseHeight = ChannelCardHeight;
+            var baseHeight = ChannelCardBaseHeight;
+            if (!usesTwoColumn)
+            {
+                baseHeight -= 12f;
+            }
 
-if (!usesTwoColumn)
-{
-    baseHeight -= 10f; // compact vertical layout to trim excess space under the URL field
-}
-
-var stackSpacingY = MathF.Max(4f, spacingX * 0.6f); // maintain a narrow but visible gutter between stacked cards
-return new SettingsLayoutMetrics(availableWidth, panelHeight, spacingX, twoColumnThreshold, usesTwoColumn, cardWidth, baseHeight, stackSpacingY);
+            var cardHeight = MathF.Max(ChannelCardMinHeight, baseHeight);
+            var stackSpacingY = MathF.Max(6f, spacingX * 0.5f);
+            return new SettingsLayoutMetrics(availableWidth, panelHeight, spacingX, twoColumnThreshold, usesTwoColumn, cardWidth, cardHeight, stackSpacingY);
         }
     }
 }

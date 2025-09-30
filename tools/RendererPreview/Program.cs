@@ -114,13 +114,19 @@ internal static class ThemeSwatchFactory
     {
         return new List<ThemeSwatch>
         {
+            Build("WindowBg", UiTheme.WindowBg, true, "メインウィンドウ背景"),
+            Build("ToolbarBg", UiTheme.ToolbarBg, true, "ヘッダー背景"),
+            Build("ToolbarBorder", UiTheme.ToolbarBorder, true, "ヘッダー境界線"),
+            Build("SurfaceBorder", UiTheme.SurfaceBorder, true, "サーフェス枠線"),
+            Build("PanelBg", UiTheme.PanelBg, true, "設定パネル背景"),
+            Build("ToolbarText", UiTheme.ToolbarText, false, "ヘッダーテキスト"),
+            Build("ToolbarMuted", UiTheme.ToolbarMuted, false, "ヘッダーメタ情報"),
             Build("PrimaryText", UiTheme.PrimaryText, false, "通常テキスト"),
             Build("MutedText", UiTheme.MutedText, false, "サブラベル・補足"),
             Build("AccentPrimary", UiTheme.AccentPrimary, false, "アクション強調"),
             Build("WarningText", UiTheme.WarningText, false, "警告表示"),
             Build("SuccessText", UiTheme.SuccessText, false, "成功状態"),
             Build("ErrorText", UiTheme.ErrorText, false, "エラー強調"),
-            Build("PanelBg", UiTheme.PanelBg, true, "設定パネル背景"),
         };
     }
 

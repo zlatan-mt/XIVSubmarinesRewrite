@@ -196,27 +196,39 @@ public sealed class OverviewWindowRenderer : IViewRenderer
                 ImGui.TableNextRow();
 
                 ImGui.TableSetColumnIndex(0);
-                ImGui.TextUnformatted(GetDisplayName(submarine));
+                ImGui.TextUnformatted(OverviewRowFormatter.GetDisplayName(submarine));
 
                 ImGui.TableSetColumnIndex(1);
-                ImGui.TextUnformatted(FormatStatus(submarine.Status));
+                ImGui.TextUnformatted(OverviewRowFormatter.FormatStatus(submarine.Status));
 
                 ImGui.TableSetColumnIndex(2);
-                ImGui.TextUnformatted(FormatRemaining(submarine.Remaining));
+                ImGui.TextUnformatted(OverviewRowFormatter.FormatRemaining(submarine.Remaining));
 
                 ImGui.TableSetColumnIndex(3);
-                ImGui.TextUnformatted(FormatArrival(submarine.Arrival));
+                ImGui.TextUnformatted(OverviewRowFormatter.FormatArrival(submarine.Arrival));
 
                 ImGui.TableSetColumnIndex(4);
-                if (string.IsNullOrWhiteSpace(submarine.RouteId))
+                ImGui.PushID(submarine.SubmarineId.ToString());
+                var rawRoute = string.IsNullOrWhiteSpace(submarine.RouteId)
+                    ? "--"
+                    : this.routeCatalog.FormatRoute(submarine.RouteId);
+                if (string.IsNullOrWhiteSpace(rawRoute) || rawRoute == "--")
                 {
                     ImGui.TextDisabled("--");
                 }
                 else
                 {
-                    var routeLabel = this.routeCatalog.FormatRoute(submarine.RouteId);
-                    ImGui.TextUnformatted(routeLabel);
+                    var wrapped = OverviewRowFormatter.BuildWrappedRouteLabel(rawRoute);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + ImGui.GetColumnWidth());
+                    ImGui.TextUnformatted(wrapped);
+                    ImGui.PopTextWrapPos();
+                    if (ImGui.SmallButton("コピー"))
+                    {
+                        var copyPayload = OverviewRowFormatter.BuildCopyLine(submarine, rawRoute);
+                        ImGui.SetClipboardText(copyPayload);
+                    }
                 }
+                ImGui.PopID();
             }
 
             ImGui.EndTable();
@@ -235,48 +247,6 @@ public sealed class OverviewWindowRenderer : IViewRenderer
         this.PersistVisibility();
     }
 
-    private static string GetDisplayName(SubmarineOverviewEntry submarine)
-        => string.IsNullOrWhiteSpace(submarine.Name) ? submarine.SubmarineId.ToString() : submarine.Name;
-
-    private static string FormatStatus(VoyageStatus status)
-        => status switch
-        {
-            VoyageStatus.Completed => "完了",
-            VoyageStatus.Underway => "航行中",
-            VoyageStatus.Scheduled => "出航予定",
-            _ => "不明",
-        };
-
-    private static string FormatRemaining(TimeSpan? remaining)
-    {
-        if (remaining is null)
-        {
-            return "--";
-        }
-
-        if (remaining.Value <= TimeSpan.Zero)
-        {
-            return "帰港済み";
-        }
-
-        var span = remaining.Value;
-        if (span.TotalHours >= 1)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0:D2}h {1:D2}m", (int)span.TotalHours, span.Minutes);
-        }
-
-        return string.Format(CultureInfo.InvariantCulture, "{0:D2}m", Math.Max(0, span.Minutes));
-    }
-
-    private static string FormatArrival(DateTime? arrival)
-    {
-        if (arrival is null)
-        {
-            return "--";
-        }
-
-        return arrival.Value.ToLocalTime().ToString("M/d HH:mm", CultureInfo.CurrentCulture);
-    }
 
     private bool TryEnsureSelection(IReadOnlyList<CharacterDescriptor> descriptors)
     {

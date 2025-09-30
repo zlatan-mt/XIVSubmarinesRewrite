@@ -170,23 +170,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
             var discordEnabled = this.editingSettings.EnableDiscord;
             var notionEnabled = this.editingSettings.EnableNotion;
-            var twoColumn = metrics.UsesTwoColumn;
-            var cardWidth = metrics.CardWidth;
-
-            if (twoColumn)
-            {
-                ImGui.BeginGroup();
-                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth, metrics.CardHeight);
-                ImGui.SameLine(0f, spacing);
-                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth, metrics.CardHeight);
-                ImGui.EndGroup();
-            }
-            else
-            {
-                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, cardWidth, metrics.CardHeight);
-                ImGui.Dummy(new Vector2(0f, metrics.StackSpacingY));
-                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, cardWidth, metrics.CardHeight);
-            }
+            changed |= this.RenderChannelCards(metrics, ref discordEnabled, ref notionEnabled);
 
             this.editingSettings.EnableDiscord = discordEnabled;
             this.editingSettings.EnableNotion = notionEnabled;

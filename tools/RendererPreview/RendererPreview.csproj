@@ -2,7 +2,6 @@
 <!-- UiTheme プレビュー CLI プロジェクト設定です -->
 <!-- Playwright で色検証アーティファクトを生成するため存在します -->
 <!-- RELEVANT FILES: apps/XIVSubmarinesRewrite/tools/RendererPreview/Program.cs, apps/XIVSubmarinesRewrite/src/Presentation/Rendering/UiTheme.cs -->
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -22,8 +21,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\XIVSubmarinesRewrite.csproj" />
+    <Compile Include="..\..\src\Presentation\Rendering\UiTheme.cs">
+      <Link>Presentation/Rendering/UiTheme.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

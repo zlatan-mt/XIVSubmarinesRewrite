@@ -14,13 +14,13 @@
   - [x] ウィンドウをリサイズ→再起動で直近サイズが復元される
 - [x] RendererPreview の CLI を Playwright 用フィクスチャから呼び出すヘルパーにまとめ、実行時間と生成物をログ出力する
 - [x] `npm test` が `main-window.spec.ts` を含めて完走するよう `package.json` と Playwright 設定を更新する
-- [ ] GitHub Actions (または既存CI) に `npm test` 実行ステップを追加し、成果物レポートをアーティファクト化する
+- [x] GitHub Actions (または既存CI) に `npm test` 実行ステップを追加し、成果物レポートをアーティファクト化する
 - [x] README に main-window シナリオの追加実行手順とトラブルシュートを追記する
 
 ### Phase6 テスト
-- [ ] `npm run playwright:install`
-- [ ] `npm test`
-- [ ] `npm run test:ui:headed`
+- [x] `npm run playwright:install`
+- [x] `npm test`
+- [x] `npm run test:ui:headed`
 
 ## Phase7 — Overview / Notification UI 磨き込み
 - [ ] メインヘッダ配色とアイコンを決定し、ライト/ダーク双方でコントラスト比を測定する

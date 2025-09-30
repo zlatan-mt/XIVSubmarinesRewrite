@@ -1,0 +1,76 @@
+# apps/XIVSubmarinesRewrite/.github/workflows/ui-tests.yml
+# Playwright UI tests workflow for Phase6 automation
+# Ensures npm test runs in CI and stores reports for review
+# RELEVANT FILES: apps/XIVSubmarinesRewrite/package.json, apps/XIVSubmarinesRewrite/tests/Playwright/playwright.config.ts, apps/XIVSubmarinesRewrite/tests/Playwright/utils/renderer-preview.ts
+
+name: UI Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      PLAYWRIGHT_BROWSERS_PATH: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install Playwright project dependencies
+        run: npm install
+        working-directory: tests/Playwright
+
+      - name: Install Playwright browsers
+        run: npm run playwright:install
+
+      - name: Clean Playwright artifacts
+        run: |
+          rm -rf tests/Playwright/test-results
+          rm -rf tests/Playwright/playwright-report
+          rm -rf tests/Playwright/.artifacts
+
+      - name: Run Playwright tests
+        run: npm test
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: tests/Playwright/test-results
+          if-no-files-found: ignore
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
+          path: tests/Playwright/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload renderer preview artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-preview-artifacts
+          path: tests/Playwright/.artifacts
+          if-no-files-found: ignore

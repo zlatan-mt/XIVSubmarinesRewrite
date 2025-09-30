@@ -31,8 +31,10 @@ class MainWindowHarness {
 
   async dispose(): Promise<void> {
     await this.page.evaluate(() => {
-      const storageKey = 'xsr.window.size';
-      window.localStorage.removeItem(storageKey);
+      const app = (window as any).mainWindowApp;
+      if (app && typeof app.reset === 'function') {
+        app.reset();
+      }
     });
   }
 
@@ -131,6 +133,34 @@ class MainWindowHarness {
     (function () {
       const TAB_STORAGE_KEY = 'xsr.window.size';
       const DEFAULT_SIZE = { width: 960, height: 640 };
+      const memoryStorage = new Map();
+
+      function readStorage(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (error) {
+          console.warn('[Harness] localStorage unavailable, using in-memory storage', error);
+          return memoryStorage.has(key) ? memoryStorage.get(key) : null;
+        }
+      }
+
+      function writeStorage(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (error) {
+          console.warn('[Harness] localStorage unavailable, using in-memory storage', error);
+          memoryStorage.set(key, value);
+        }
+      }
+
+      function clearStorage(key) {
+        try {
+          window.localStorage.removeItem(key);
+        } catch (error) {
+          console.warn('[Harness] localStorage unavailable, using in-memory storage', error);
+          memoryStorage.delete(key);
+        }
+      }
       const state = {
         activeTab: 'overview',
         devVisible: false,
@@ -147,9 +177,9 @@ class MainWindowHarness {
       const meta = document.getElementById('meta');
 
       function loadSize() {
+        const raw = readStorage(TAB_STORAGE_KEY);
+        if (!raw) return { ...DEFAULT_SIZE };
         try {
-          const raw = window.localStorage.getItem(TAB_STORAGE_KEY);
-          if (!raw) return { ...DEFAULT_SIZE };
           const parsed = JSON.parse(raw);
           if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
             return { width: parsed.width, height: parsed.height };
@@ -161,7 +191,7 @@ class MainWindowHarness {
       }
 
       function saveSize() {
-        window.localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify(state.size));
+        writeStorage(TAB_STORAGE_KEY, JSON.stringify(state.size));
       }
 
       function render() {
@@ -245,7 +275,7 @@ class MainWindowHarness {
           return !!element && element.dataset.visible === 'true';
         },
         reset() {
-          window.localStorage.removeItem(TAB_STORAGE_KEY);
+          clearStorage(TAB_STORAGE_KEY);
           state.activeTab = 'overview';
           state.devVisible = false;
           state.size = { ...DEFAULT_SIZE };
