@@ -1,0 +1,5 @@
+- `dotnet build` or `dotnet build -c Release`: compile the plugin, triggers post-build copy to devPlugins when APPDATA is set.
+- `dotnet clean`: reset build outputs if copy step misbehaves.
+- `npm run playwright:install`: install Playwright browsers before running UI tests.
+- `npm run test:ui` / `npm run test:ui:headed`: execute Playwright automation in headless/headed modes from tests/Playwright.
+- `npm run test:ui:main-window`: focus on the main window tag scenario for quick smoke checks.

@@ -1,0 +1,4 @@
+- Follow repo convention of four-line header comments at top of every file documenting path, purpose, justification, and relevant files.
+- Keep modules under 300 LOC, prefer single responsibility and clear separation between domain/application/presentation layers.
+- Enable nullable reference types; Implicit using and allow unsafe blocks per csproj so guard pointer code carefully.
+- Add inline comments for any non-obvious logic, especially around acquisition hooks, data mapping, and UI rendering.
