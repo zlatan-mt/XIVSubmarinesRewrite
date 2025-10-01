@@ -9,89 +9,16 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
-using ImGuiCol = Dalamud.Bindings.ImGui.ImGuiCol;
 using ImGuiStyleVar = Dalamud.Bindings.ImGui.ImGuiStyleVar;
 using ImGuiWindowFlags = Dalamud.Bindings.ImGui.ImGuiWindowFlags;
 using ImGuiTreeNodeFlags = Dalamud.Bindings.ImGui.ImGuiTreeNodeFlags;
 using ImGuiMouseCursor = Dalamud.Bindings.ImGui.ImGuiMouseCursor;
 using ImGuiTableColumnFlags = Dalamud.Bindings.ImGui.ImGuiTableColumnFlags;
 using ImGuiTableFlags = Dalamud.Bindings.ImGui.ImGuiTableFlags;
-using ImGuiTableRowFlags = Dalamud.Bindings.ImGui.ImGuiTableRowFlags;
 using ImGuiSliderFlags = Dalamud.Bindings.ImGui.ImGuiSliderFlags;
 
 public sealed partial class NotificationMonitorWindowRenderer
 {
-    private bool RenderChannelCard(string id, string title, ref bool enabled, byte[] buffer, Action<string> setter, float preferredHeight)
-    {
-        var changed = false;
-        ImGui.PushID(id);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8f, 6f));
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(6f, 4f));
-        var childFlags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.AlwaysUseWindowPadding;
-        var cardHeight = MathF.Max(preferredHeight, ChannelCardMinHeight);
-        if (ImGui.BeginChild("channel_card", new Vector2(-1f, cardHeight), true, childFlags))
-        {
-            var stateText = enabled ? "ACTIVE" : "OFF";
-            var stateColor = enabled ? UiTheme.SuccessText : UiTheme.MutedText;
-            ImGui.TextColored(UiTheme.PrimaryText, title);
-            ImGui.SameLine();
-            ImGui.TextColored(stateColor, stateText);
-            ImGui.SameLine();
-            if (ImGui.Checkbox("通知を送信", ref enabled))
-            {
-                changed = true;
-            }
-
-            ImGui.PushItemWidth(-1f);
-            changed |= this.RenderUrlInput("Webhook URL", buffer, setter);
-            ImGui.PopItemWidth();
-        }
-
-        ImGui.EndChild();
-        ImGui.PopStyleVar(2);
-        ImGui.PopID();
-        return changed;
-    }
-
-    private bool RenderChannelCards(in SettingsLayoutMetrics metrics, ref bool discordEnabled, ref bool notionEnabled)
-    {
-        var changed = false;
-        const ImGuiTableFlags flags = ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoSavedSettings;
-        var columns = Math.Max(1, metrics.ColumnCount);
-        if (!ImGui.BeginTable("channel_cards", columns, flags))
-        {
-            return false;
-        }
-
-        var totalChannels = 2;
-        for (var index = 0; index < totalChannels; index++)
-        {
-            if (index % columns == 0)
-            {
-                var rowHeight = metrics.CardHeight;
-                if (index >= columns)
-                {
-                    rowHeight += metrics.StackSpacingY;
-                }
-
-                ImGui.TableNextRow(ImGuiTableRowFlags.None, rowHeight);
-            }
-
-            ImGui.TableSetColumnIndex(index % columns);
-            if (index == 0)
-            {
-                changed |= this.RenderChannelCard("discord", "Discord", ref discordEnabled, this.discordUrlBuffer, value => this.editingSettings.DiscordWebhookUrl = value, metrics.CardHeight);
-            }
-            else
-            {
-                changed |= this.RenderChannelCard("notion", "Notion", ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, metrics.CardHeight);
-            }
-        }
-
-        ImGui.EndTable();
-        return changed;
-    }
-
     private bool RenderDeliveryOptions()
     {
         var changed = false;

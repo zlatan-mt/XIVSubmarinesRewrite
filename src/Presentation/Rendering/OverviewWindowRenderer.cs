@@ -21,7 +21,7 @@ using XIVSubmarinesRewrite.Infrastructure.Routes;
 using XIVSubmarinesRewrite.Presentation.ViewModels;
 
 /// <summary>Renders the main overview window that end users interact with.</summary>
-public sealed class OverviewWindowRenderer : IViewRenderer
+public sealed partial class OverviewWindowRenderer : IViewRenderer
 {
     private readonly IOverviewViewModel viewModel;
     private readonly ICharacterRegistry characterRegistry;
@@ -97,144 +97,6 @@ public sealed class OverviewWindowRenderer : IViewRenderer
         }
     }
 
-    public void RenderTabContent()
-    {
-        this.RenderOverviewContent(includeNotificationTab: false);
-    }
-
-    private void RenderOverviewContent(bool includeNotificationTab)
-    {
-        ImGui.TextDisabled(this.versionLabel);
-        ImGui.Separator();
-
-        var descriptors = this.characterRegistry.Characters;
-        if (descriptors.Count == 0)
-        {
-            ImGui.Text("キャラクターのデータがまだありません。");
-            ImGui.TextDisabled("工房 UI を開き、スナップショットを取得してください。");
-            return;
-        }
-
-        if (!this.TryEnsureSelection(descriptors))
-        {
-            return;
-        }
-
-        var displayName = descriptors.First(d => d.CharacterId == this.selectedCharacterId).DisplayName;
-        if (ImGui.BeginCombo("キャラクター", displayName))
-        {
-            foreach (var descriptor in descriptors)
-            {
-                var isSelected = descriptor.CharacterId == this.selectedCharacterId;
-                if (ImGui.Selectable(descriptor.DisplayName, isSelected))
-                {
-                    this.selectedCharacterId = descriptor.CharacterId;
-                    this.characterRegistry.SelectCharacter(this.selectedCharacterId);
-                    this.preferences.LastSelectedCharacterId = this.selectedCharacterId;
-                    this.settings.SaveAsync(this.preferences).GetAwaiter().GetResult();
-                }
-
-                if (isSelected)
-                {
-                    ImGui.SetItemDefaultFocus();
-                }
-            }
-
-            ImGui.EndCombo();
-        }
-
-        ImGui.Separator();
-
-        if (includeNotificationTab)
-        {
-            if (ImGui.BeginTabBar("xsr_overview_tabs"))
-            {
-                if (ImGui.BeginTabItem("潜水艦"))
-                {
-                    this.RenderSubmarineTab();
-                    ImGui.EndTabItem();
-                }
-
-                if (ImGui.BeginTabItem("通知"))
-                {
-                    this.notificationWindow.RenderInline();
-                    ImGui.EndTabItem();
-                }
-
-                ImGui.EndTabBar();
-            }
-        }
-        else
-        {
-            this.RenderSubmarineTab();
-        }
-    }
-
-    private void RenderSubmarineTab()
-    {
-        var submarines = this.viewModel.Submarines;
-        if (submarines.Count == 0)
-        {
-            ImGui.Text("潜水艦データがまだありません。");
-            ImGui.TextDisabled("工房 UI を開くか、メモリ取得が完了すると一覧が更新されます。");
-            return;
-        }
-
-        const ImGuiTableFlags flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp;
-        this.RenderSummaryRow(submarines);
-        if (ImGui.BeginTable("##xsr_overview_table", 5, flags))
-        {
-            ImGui.TableSetupColumn("艦名", ImGuiTableColumnFlags.WidthStretch, 2.0f);
-            ImGui.TableSetupColumn("状態", ImGuiTableColumnFlags.WidthStretch, 1.0f);
-            ImGui.TableSetupColumn("残り時間", ImGuiTableColumnFlags.WidthStretch, 1.0f);
-            ImGui.TableSetupColumn("帰港予定", ImGuiTableColumnFlags.WidthStretch, 1.2f);
-            ImGui.TableSetupColumn("航路", ImGuiTableColumnFlags.WidthStretch, 1.8f);
-            ImGui.TableHeadersRow();
-
-            foreach (var submarine in submarines)
-            {
-                ImGui.TableNextRow();
-
-                ImGui.TableSetColumnIndex(0);
-                ImGui.TextUnformatted(OverviewRowFormatter.GetDisplayName(submarine));
-
-                ImGui.TableSetColumnIndex(1);
-                ImGui.TextUnformatted(OverviewRowFormatter.FormatStatus(submarine.Status));
-
-                ImGui.TableSetColumnIndex(2);
-                ImGui.TextUnformatted(OverviewRowFormatter.FormatRemaining(submarine.Remaining));
-
-                ImGui.TableSetColumnIndex(3);
-                ImGui.TextUnformatted(OverviewRowFormatter.FormatArrival(submarine.Arrival));
-
-                ImGui.TableSetColumnIndex(4);
-                ImGui.PushID(submarine.SubmarineId.ToString());
-                var rawRoute = string.IsNullOrWhiteSpace(submarine.RouteId)
-                    ? "--"
-                    : this.routeCatalog.FormatRoute(submarine.RouteId);
-                if (string.IsNullOrWhiteSpace(rawRoute) || rawRoute == "--")
-                {
-                    ImGui.TextDisabled("--");
-                }
-                else
-                {
-                    var wrapped = OverviewRowFormatter.BuildWrappedRouteLabel(rawRoute);
-                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + ImGui.GetColumnWidth());
-                    ImGui.TextUnformatted(wrapped);
-                    ImGui.PopTextWrapPos();
-                    if (ImGui.SmallButton("コピー"))
-                    {
-                        var copyPayload = OverviewRowFormatter.BuildCopyLine(submarine, rawRoute);
-                        ImGui.SetClipboardText(copyPayload);
-                    }
-                }
-                ImGui.PopID();
-            }
-
-            ImGui.EndTable();
-        }
-    }
-
     public void Toggle()
     {
         this.isVisible = !this.isVisible;
@@ -247,29 +109,6 @@ public sealed class OverviewWindowRenderer : IViewRenderer
         this.PersistVisibility();
     }
 
-
-    private bool TryEnsureSelection(IReadOnlyList<CharacterDescriptor> descriptors)
-    {
-        if (this.selectedCharacterId != 0 && descriptors.Any(d => d.CharacterId == this.selectedCharacterId))
-        {
-            return true;
-        }
-
-        if (this.characterRegistry.ActiveCharacterId != 0 && descriptors.Any(d => d.CharacterId == this.characterRegistry.ActiveCharacterId))
-        {
-            this.selectedCharacterId = this.characterRegistry.ActiveCharacterId;
-            return true;
-        }
-
-        if (descriptors.Count > 0)
-        {
-            this.selectedCharacterId = descriptors[0].CharacterId;
-            this.characterRegistry.SelectCharacter(this.selectedCharacterId);
-            return true;
-        }
-
-        return false;
-    }
 
     private void OnActiveCharacterChanged(object? sender, CharacterChangedEventArgs e)
     {

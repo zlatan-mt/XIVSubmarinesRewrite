@@ -141,18 +141,6 @@ public sealed partial class NotificationMonitorWindowRenderer
         }
     }
 
-    private bool RenderUrlInput(string label, byte[] buffer, Action<string> setValue)
-    {
-        var modified = ImGui.InputText(label, buffer, ImGuiInputTextFlags.None);
-        if (modified)
-        {
-            var text = ExtractString(buffer);
-            setValue(text);
-        }
-
-        return modified;
-    }
-
     private void ApplySettings()
     {
         this.settings.EnableDiscord = this.editingSettings.EnableDiscord;
@@ -178,6 +166,7 @@ public sealed partial class NotificationMonitorWindowRenderer
         WriteStringToBuffer(this.settings.DiscordWebhookUrl, this.discordUrlBuffer);
         WriteStringToBuffer(this.settings.NotionWebhookUrl, this.notionUrlBuffer);
         this.editingDiscordBatchWindowSeconds = (float)Math.Clamp(this.settings.DiscordBatchWindowSeconds, 0.5, 15.0);
+        this.RevalidateChannelUrls();
     }
 
     private void TriggerManualNotification()

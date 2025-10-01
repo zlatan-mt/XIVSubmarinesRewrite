@@ -6,6 +6,10 @@
 namespace XIVSubmarinesRewrite.Presentation.Rendering;
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text.Json;
 using Dalamud.Bindings.ImGui;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImGuiTableColumnFlags = Dalamud.Bindings.ImGui.ImGuiTableColumnFlags;
@@ -20,7 +24,9 @@ public sealed partial class NotificationMonitorWindowRenderer
     private const float ChannelCardMinHeight = 120f;
 
     // Latest layout snapshot helps Phase9-A collect concrete measurements.
-    private SettingsLayoutDebugSnapshot settingsLayoutDebug = SettingsLayoutDebugSnapshot.Empty;
+    private NotificationLayoutDebugSnapshot settingsLayoutDebug = NotificationLayoutDebugSnapshot.Empty;
+    private string? layoutTelemetryMessage;
+    private DateTime layoutTelemetryExpiryUtc;
 
     private void RenderSettingsLayoutDebugPanel()
     {
@@ -56,10 +62,17 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.EndTable();
         }
 
+        if (ImGui.Button("メトリクスJSONを保存"))
+        {
+            this.SaveLayoutTelemetry(snapshot.Runtime);
+        }
+        ImGui.SameLine();
+        this.RenderLayoutTelemetryStatus();
+
         ImGui.TreePop();
     }
 
-    private static void RenderSettingsLayoutMetricsRow(string label, SettingsLayoutMetrics metrics)
+    private static void RenderSettingsLayoutMetricsRow(string label, NotificationLayoutMetrics metrics)
     {
         ImGui.TableNextRow();
         ImGui.TableSetColumnIndex(0);
@@ -73,38 +86,38 @@ public sealed partial class NotificationMonitorWindowRenderer
         ImGui.TextUnformatted($"{metrics.CardWidth:F1}px");
     }
 
-    private readonly struct SettingsLayoutDebugSnapshot
+    private readonly struct NotificationLayoutDebugSnapshot
     {
-        public static readonly SettingsLayoutDebugSnapshot Empty = new SettingsLayoutDebugSnapshot(default, default, default);
+        public static readonly NotificationLayoutDebugSnapshot Empty = new NotificationLayoutDebugSnapshot(default, default, default);
 
-        public SettingsLayoutDebugSnapshot(SettingsLayoutMetrics runtime, SettingsLayoutMetrics width640, SettingsLayoutMetrics width780)
+        public NotificationLayoutDebugSnapshot(NotificationLayoutMetrics runtime, NotificationLayoutMetrics width640, NotificationLayoutMetrics width780)
         {
             this.Runtime = runtime;
             this.Width640 = width640;
             this.Width780 = width780;
         }
 
-        public SettingsLayoutMetrics Runtime { get; }
-        public SettingsLayoutMetrics Width640 { get; }
-        public SettingsLayoutMetrics Width780 { get; }
+        public NotificationLayoutMetrics Runtime { get; }
+        public NotificationLayoutMetrics Width640 { get; }
+        public NotificationLayoutMetrics Width780 { get; }
         public bool HasRuntime => this.Runtime.AvailableWidth > 0.1f;
 
-        public static SettingsLayoutDebugSnapshot Create(SettingsLayoutMetrics runtime)
+        public static NotificationLayoutDebugSnapshot Create(NotificationLayoutMetrics runtime)
         {
             if (runtime.AvailableWidth <= 0f)
             {
                 return Empty;
             }
 
-            var width640 = SettingsLayoutMetrics.Create(640f, runtime.PanelHeight, runtime.SpacingX, runtime.TwoColumnThreshold);
-            var width780 = SettingsLayoutMetrics.Create(780f, runtime.PanelHeight, runtime.SpacingX, runtime.TwoColumnThreshold);
-            return new SettingsLayoutDebugSnapshot(runtime, width640, width780);
+            var width640 = NotificationLayoutMetrics.Create(640f, runtime.PanelHeight, runtime.SpacingX, runtime.TwoColumnThreshold);
+            var width780 = NotificationLayoutMetrics.Create(780f, runtime.PanelHeight, runtime.SpacingX, runtime.TwoColumnThreshold);
+            return new NotificationLayoutDebugSnapshot(runtime, width640, width780);
         }
     }
 
-    private readonly struct SettingsLayoutMetrics
+    private readonly struct NotificationLayoutMetrics
     {
-        public SettingsLayoutMetrics(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold, bool usesTwoColumn, float cardWidth, float cardHeight, float stackSpacingY)
+        public NotificationLayoutMetrics(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold, bool usesTwoColumn, float cardWidth, float cardHeight, float stackSpacingY)
         {
             this.AvailableWidth = availableWidth;
             this.PanelHeight = panelHeight;
@@ -125,8 +138,11 @@ public sealed partial class NotificationMonitorWindowRenderer
         public float CardHeight { get; }
         public float StackSpacingY { get; }
         public int ColumnCount => this.UsesTwoColumn ? 2 : 1;
+        public IReadOnlyList<float> Breakpoints => this.breakpointList ??= new[] { this.TwoColumnThreshold };
 
-        public static SettingsLayoutMetrics Create(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold)
+        private IReadOnlyList<float>? breakpointList;
+
+        public static NotificationLayoutMetrics Create(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold)
         {
             var usesTwoColumn = availableWidth >= twoColumnThreshold;
             var twoColumnWidth = MathF.Max((availableWidth - spacingX) * 0.5f, ChannelCardMinWidth);
@@ -141,7 +157,97 @@ public sealed partial class NotificationMonitorWindowRenderer
 
             var cardHeight = MathF.Max(ChannelCardMinHeight, baseHeight);
             var stackSpacingY = MathF.Max(6f, spacingX * 0.5f);
-            return new SettingsLayoutMetrics(availableWidth, panelHeight, spacingX, twoColumnThreshold, usesTwoColumn, cardWidth, cardHeight, stackSpacingY);
+            return new NotificationLayoutMetrics(availableWidth, panelHeight, spacingX, twoColumnThreshold, usesTwoColumn, cardWidth, cardHeight, stackSpacingY);
+        }
+    }
+
+    private void SaveLayoutTelemetry(NotificationLayoutMetrics metrics)
+    {
+        try
+        {
+            var payload = LayoutTelemetryRecord.Create(metrics);
+            var nowUtc = DateTime.UtcNow;
+            var dateSegment = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var timestamp = nowUtc.ToString("HH-mm-ss-fff", CultureInfo.InvariantCulture);
+            var directory = Path.Combine(AppContext.BaseDirectory, "logs", dateSegment, "notification-layout");
+            Directory.CreateDirectory(directory);
+            var filePath = Path.Combine(directory, $"metrics-{timestamp}.json");
+            var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+            this.layoutTelemetryMessage = $"{timestamp} に保存: metrics-{timestamp}.json";
+            this.layoutTelemetryExpiryUtc = nowUtc.AddSeconds(5);
+        }
+        catch (Exception error)
+        {
+            this.layoutTelemetryMessage = $"保存失敗: {error.Message}";
+            this.layoutTelemetryExpiryUtc = DateTime.UtcNow.AddSeconds(5);
+        }
+    }
+
+    private void RenderLayoutTelemetryStatus()
+    {
+        if (this.layoutTelemetryMessage is null)
+        {
+            ImGui.TextColored(UiTheme.MutedText, "クリックで JSON を出力します。");
+            return;
+        }
+
+        if (DateTime.UtcNow > this.layoutTelemetryExpiryUtc)
+        {
+            this.layoutTelemetryMessage = null;
+            ImGui.TextColored(UiTheme.MutedText, "クリックで JSON を出力します。");
+            return;
+        }
+
+        ImGui.TextColored(UiTheme.AccentPrimary, this.layoutTelemetryMessage);
+    }
+
+    private readonly struct LayoutTelemetryRecord
+    {
+        private LayoutTelemetryRecord(
+            float availableWidth,
+            float panelHeight,
+            float spacingX,
+            float cardWidth,
+            float cardHeight,
+            float twoColumnThreshold,
+            bool usesTwoColumn,
+            float stackSpacing,
+            IReadOnlyList<float> breakpoints)
+        {
+            this.AvailableWidth = availableWidth;
+            this.PanelHeight = panelHeight;
+            this.SpacingX = spacingX;
+            this.CardWidth = cardWidth;
+            this.CardHeight = cardHeight;
+            this.TwoColumnThreshold = twoColumnThreshold;
+            this.UsesTwoColumn = usesTwoColumn;
+            this.StackSpacing = stackSpacing;
+            this.Breakpoints = breakpoints;
+        }
+
+        public float AvailableWidth { get; }
+        public float PanelHeight { get; }
+        public float SpacingX { get; }
+        public float CardWidth { get; }
+        public float CardHeight { get; }
+        public float TwoColumnThreshold { get; }
+        public bool UsesTwoColumn { get; }
+        public float StackSpacing { get; }
+        public IReadOnlyList<float> Breakpoints { get; }
+
+        public static LayoutTelemetryRecord Create(NotificationLayoutMetrics metrics)
+        {
+            return new LayoutTelemetryRecord(
+                metrics.AvailableWidth,
+                metrics.PanelHeight,
+                metrics.SpacingX,
+                metrics.CardWidth,
+                metrics.CardHeight,
+                metrics.TwoColumnThreshold,
+                metrics.UsesTwoColumn,
+                metrics.StackSpacingY,
+                metrics.Breakpoints);
         }
     }
 }

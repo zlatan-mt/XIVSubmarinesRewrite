@@ -44,6 +44,10 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     private bool isVisible;
     private string? identityToastMessage;
     private DateTime identityToastExpiryUtc;
+    private bool discordUrlValid = true;
+    private bool notionUrlValid = true;
+    private string? discordUrlError;
+    private string? notionUrlError;
 
     public NotificationMonitorWindowRenderer(
         NotificationQueueViewModel queueViewModel,
@@ -67,6 +71,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         this.forceNotifyDiagnostics = forceNotifyDiagnostics;
         this.editingSettings = this.settings.Clone();
         this.LoadBuffersFromSettings();
+        this.RevalidateChannelUrls();
     }
 
     public bool IsVisible
@@ -165,8 +170,8 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             var changed = false;
             var spacing = ImGui.GetStyle().ItemSpacing.X;
             var width = ImGui.GetContentRegionAvail().X;
-            var metrics = SettingsLayoutMetrics.Create(width, panelHeight, spacing, 620f);
-            this.settingsLayoutDebug = SettingsLayoutDebugSnapshot.Create(metrics);
+            var metrics = NotificationLayoutMetrics.Create(width, panelHeight, spacing, 620f);
+            this.settingsLayoutDebug = NotificationLayoutDebugSnapshot.Create(metrics);
 
             var discordEnabled = this.editingSettings.EnableDiscord;
             var notionEnabled = this.editingSettings.EnableNotion;
@@ -174,6 +179,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
             this.editingSettings.EnableDiscord = discordEnabled;
             this.editingSettings.EnableNotion = notionEnabled;
+            var formValid = this.IsNotificationFormValid();
 
             ImGui.Separator();
             changed |= this.RenderDeliveryOptions();
@@ -184,7 +190,17 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             if (includeDeveloperOptions)
             {
                 ImGui.Separator();
+                if (!formValid)
+                {
+                    ImGui.BeginDisabled();
+                }
+
                 changed |= this.RenderDeveloperOptions();
+
+                if (!formValid)
+                {
+                    ImGui.EndDisabled();
+                }
             }
 
             if (changed)
@@ -192,14 +208,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
                 this.settingsDirty = true;
             }
 
-            ImGui.BeginDisabled(!this.settingsDirty);
-            if (ImGui.Button("通知設定を保存", new Vector2(180f, 0f)))
-            {
-                this.ApplySettings();
-            }
-            ImGui.EndDisabled();
-            ImGui.SameLine();
-            ImGui.TextColored(UiTheme.MutedText, "保存すると即座に Dalamud へ反映されます。");
+            this.RenderSavePanel(formValid);
 
             ImGui.EndChild();
         }

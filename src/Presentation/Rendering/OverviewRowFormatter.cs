@@ -57,6 +57,37 @@ internal static class OverviewRowFormatter
         return arrival.Value.ToLocalTime().ToString("M/d HH:mm", CultureInfo.CurrentCulture);
     }
 
+    public static string FormatRemainingCompact(TimeSpan? remaining)
+    {
+        if (remaining is null)
+        {
+            return "--";
+        }
+
+        if (remaining.Value <= TimeSpan.Zero)
+        {
+            return "帰港";
+        }
+
+        var span = remaining.Value;
+        if (span.TotalHours >= 1)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0}h{1:D2}", (int)span.TotalHours, span.Minutes);
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0}m", Math.Max(1, span.Minutes));
+    }
+
+    public static string FormatArrivalCompact(DateTime? arrival)
+    {
+        if (arrival is null)
+        {
+            return "--";
+        }
+
+        return arrival.Value.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
+    }
+
     public static string BuildWrappedRouteLabel(string routeLabel)
     {
         if (string.IsNullOrWhiteSpace(routeLabel))
@@ -80,6 +111,8 @@ internal static class OverviewRowFormatter
     public static string BuildCopyLine(SubmarineOverviewEntry submarine, string routeLabel)
     {
         var safeRoute = string.IsNullOrWhiteSpace(routeLabel) ? "--" : routeLabel;
+        safeRoute = StripZeroWidth(safeRoute);
+
         return string.Join(" | ", new[]
         {
             GetDisplayName(submarine),
@@ -89,4 +122,7 @@ internal static class OverviewRowFormatter
             safeRoute,
         });
     }
+
+    public static string StripZeroWidth(string value)
+        => string.IsNullOrEmpty(value) ? value : value.Replace("\u200B", string.Empty, StringComparison.Ordinal);
 }

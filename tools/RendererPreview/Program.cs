@@ -30,7 +30,8 @@ internal static class Program
         var options = RendererPreviewOptions.Parse(args);
         Directory.CreateDirectory(options.RunRoot);
 
-        var swatches = ThemeSwatchFactory.Create();
+        var references = ThemeReferenceLoader.Load();
+        var swatches = ThemeSwatchFactory.Create(references);
         WriteJson(options.JsonPath, options.RunName, swatches);
         WriteHtml(options.HtmlPath, options.RunName, swatches);
 
@@ -71,10 +72,16 @@ internal static class Program
 
         foreach (var swatch in swatches)
         {
-            builder.AppendLine($"    <div class=\"swatch\" data-token=\"{swatch.Token}\" data-expected=\"{swatch.Rgba}\" data-role=\"{(swatch.IsBackground ? "background" : "text")}\" style=\"{BuildStyle(swatch)}\">");
+            var figmaHexAttr = string.IsNullOrWhiteSpace(swatch.ReferenceHex) ? string.Empty : $" data-figma-hex=\"{swatch.ReferenceHex}\"";
+            var figmaRgbaAttr = string.IsNullOrWhiteSpace(swatch.ReferenceRgba) ? string.Empty : $" data-figma-rgba=\"{swatch.ReferenceRgba}\"";
+            var role = swatch.Role ?? (swatch.IsBackground ? "background" : "text");
+            builder.AppendLine($"    <div class=\"swatch\" data-token=\"{swatch.Token}\" data-expected=\"{swatch.Rgba}\" data-role=\"{role}\"{figmaHexAttr}{figmaRgbaAttr} style=\"{BuildStyle(swatch)}\">");
             builder.AppendLine($"      <div class=\"token\">{swatch.Token}</div>");
             builder.AppendLine($"      <div class=\"preview\">Sample Text</div>");
-            builder.AppendLine($"      <div class=\"meta\">{swatch.Description}<br>HEX: {swatch.Hex}<br>RGBA: {swatch.Rgba}</div>");
+            var referenceLine = string.IsNullOrWhiteSpace(swatch.ReferenceHex)
+                ? string.Empty
+                : $"<br>FIGMA: {swatch.ReferenceHex}";
+            builder.AppendLine($"      <div class=\"meta\">{swatch.Description}<br>HEX: {swatch.Hex}<br>RGBA: {swatch.Rgba}{referenceLine}</div>");
             builder.AppendLine("    </div>");
         }
 
@@ -106,44 +113,96 @@ internal sealed record ThemeSwatch(
     string Hex,
     string Rgba,
     bool IsBackground,
-    string Description);
+    string Description,
+    string? ReferenceHex,
+    string? ReferenceRgba,
+    string? Role);
+
+internal static class ThemeReferenceLoader
+{
+    public static IReadOnlyDictionary<string, ThemeReference> Load()
+    {
+        try
+        {
+            var repoRoot = Environment.CurrentDirectory;
+            var path = Path.Combine(repoRoot, "docs", "ui", "theme-final.jsonc");
+            if (!File.Exists(path))
+            {
+                return new Dictionary<string, ThemeReference>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            using var stream = File.OpenRead(path);
+            var options = new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+            };
+
+            using var document = JsonDocument.Parse(stream, options);
+            if (!document.RootElement.TryGetProperty("palette", out var paletteElement))
+            {
+                return new Dictionary<string, ThemeReference>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var map = new Dictionary<string, ThemeReference>(StringComparer.OrdinalIgnoreCase);
+            foreach (var element in paletteElement.EnumerateArray())
+            {
+                if (!element.TryGetProperty("token", out var tokenElement))
+                {
+                    continue;
+                }
+
+                var token = tokenElement.GetString();
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    continue;
+                }
+
+                var role = element.TryGetProperty("role", out var roleElement) ? roleElement.GetString() : null;
+                var hex = element.TryGetProperty("figmaHex", out var hexElement) ? hexElement.GetString() : null;
+                var rgba = element.TryGetProperty("figmaRgba", out var rgbaElement) ? rgbaElement.GetString() : null;
+                var description = element.TryGetProperty("description", out var descriptionElement) ? descriptionElement.GetString() : null;
+                map[token] = new ThemeReference(token, role, hex, rgba, description);
+            }
+
+            return map;
+        }
+        catch
+        {
+            return new Dictionary<string, ThemeReference>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+}
+
+internal sealed record ThemeReference(
+    string Token,
+    string? Role,
+    string? FigmaHex,
+    string? FigmaRgba,
+    string? Description);
 
 internal static class ThemeSwatchFactory
 {
-    public static IReadOnlyList<ThemeSwatch> Create()
+    public static IReadOnlyList<ThemeSwatch> Create(IReadOnlyDictionary<string, ThemeReference> references)
     {
-        return new List<ThemeSwatch>
+        var list = new List<ThemeSwatch>(UiTheme.Palette.Count);
+        foreach (var entry in UiTheme.Palette)
         {
-            Build("WindowBg", UiTheme.WindowBg, true, "メインウィンドウ背景"),
-            Build("ToolbarBg", UiTheme.ToolbarBg, true, "ヘッダー背景"),
-            Build("ToolbarBorder", UiTheme.ToolbarBorder, true, "ヘッダー境界線"),
-            Build("SurfaceBorder", UiTheme.SurfaceBorder, true, "サーフェス枠線"),
-            Build("PanelBg", UiTheme.PanelBg, true, "設定パネル背景"),
-            Build("ToolbarText", UiTheme.ToolbarText, false, "ヘッダーテキスト"),
-            Build("ToolbarMuted", UiTheme.ToolbarMuted, false, "ヘッダーメタ情報"),
-            Build("PrimaryText", UiTheme.PrimaryText, false, "通常テキスト"),
-            Build("MutedText", UiTheme.MutedText, false, "サブラベル・補足"),
-            Build("AccentPrimary", UiTheme.AccentPrimary, false, "アクション強調"),
-            Build("WarningText", UiTheme.WarningText, false, "警告表示"),
-            Build("SuccessText", UiTheme.SuccessText, false, "成功状態"),
-            Build("ErrorText", UiTheme.ErrorText, false, "エラー強調"),
-        };
-    }
+            references.TryGetValue(entry.Token, out var reference);
+            var description = reference?.Description ?? entry.Description;
+            var role = reference?.Role ?? (entry.IsBackground ? "background" : "text");
+            list.Add(new ThemeSwatch(
+                entry.Token,
+                entry.Hex,
+                entry.Rgba,
+                entry.IsBackground,
+                description,
+                reference?.FigmaHex,
+                reference?.FigmaRgba,
+                role));
+        }
 
-    private static ThemeSwatch Build(string token, Vector4 color, bool isBackground, string description)
-    {
-        var (r, g, b, a) = Convert(color);
-        var hex = $"#{r:X2}{g:X2}{b:X2}";
-        var alpha = a / 255.0;
-        var alphaText = alpha >= 0.999 ? "1" : alpha.ToString("0.##", CultureInfo.InvariantCulture);
-        var rgba = $"rgba({r}, {g}, {b}, {alphaText})";
-        return new ThemeSwatch(token, hex, rgba, isBackground, description);
-    }
-
-    private static (int r, int g, int b, int a) Convert(Vector4 color)
-    {
-        int ToByte(float component) => (int)Math.Round(Math.Clamp(component, 0f, 1f) * 255f, MidpointRounding.AwayFromZero);
-        return (ToByte(color.X), ToByte(color.Y), ToByte(color.Z), ToByte(color.W));
+        return list;
     }
 }
 

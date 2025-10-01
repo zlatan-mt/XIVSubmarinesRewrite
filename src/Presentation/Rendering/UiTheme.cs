@@ -6,6 +6,9 @@
 namespace XIVSubmarinesRewrite.Presentation.Rendering;
 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Numerics;
 
 /// <summary>Shared color palette for renderer components.</summary>
@@ -28,6 +31,26 @@ public static class UiTheme
     public static readonly Vector4 SuccessText = new (0.18f, 0.58f, 0.38f, 1f);
     public static readonly Vector4 ErrorText = new (0.92f, 0.30f, 0.28f, 1f);
 
+    private static readonly IReadOnlyList<UiThemeColor> PaletteValues = Array.AsReadOnly(new[]
+    {
+        new UiThemeColor("WindowBg", WindowBg, true, "Main window background"),
+        new UiThemeColor("ToolbarBg", ToolbarBg, true, "Toolbar background"),
+        new UiThemeColor("ToolbarBorder", ToolbarBorder, true, "Toolbar border"),
+        new UiThemeColor("SurfaceBorder", SurfaceBorder, true, "Surface outlines"),
+        new UiThemeColor("PanelBg", PanelBg, true, "Panel background"),
+        new UiThemeColor("ToolbarText", ToolbarText, false, "Toolbar text"),
+        new UiThemeColor("ToolbarMuted", ToolbarMuted, false, "Toolbar meta text"),
+        new UiThemeColor("PrimaryText", PrimaryText, false, "Primary text"),
+        new UiThemeColor("MutedText", MutedText, false, "Muted body text"),
+        new UiThemeColor("AccentPrimary", AccentPrimary, false, "Accent actions"),
+        new UiThemeColor("WarningText", WarningText, false, "Warning states"),
+        new UiThemeColor("SuccessText", SuccessText, false, "Success states"),
+        new UiThemeColor("ErrorText", ErrorText, false, "Error highlight"),
+    });
+
+    /// <summary>Tokenized palette that keeps RendererPreview と Playwright テストを同期します。</summary>
+    public static IReadOnlyList<UiThemeColor> Palette => PaletteValues;
+
     /// <summary>Computes WCAG 2.1 contrast ratio between a foreground and background color.</summary>
     public static double ContrastRatio(Vector4 foreground, Vector4 background)
     {
@@ -36,6 +59,32 @@ public static class UiTheme
         var lighter = Math.Max(lumA, lumB);
         var darker = Math.Min(lumA, lumB);
         return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    /// <summary>Converts a theme vector to a hex string (without alpha).</summary>
+    public static string ToHex(Vector4 color)
+    {
+        var (r, g, b, _) = ToRgbaComponents(color);
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    /// <summary>Converts a theme vector to an rgba() string.</summary>
+    public static string ToRgba(Vector4 color)
+    {
+        var (r, g, b, a) = ToRgbaComponents(color);
+        var alpha = a / 255f;
+        var alphaText = Math.Abs(alpha - 1f) < 0.0005f
+            ? "1"
+            : alpha.ToString("0.##", CultureInfo.InvariantCulture);
+        return $"rgba({r}, {g}, {b}, {alphaText})";
+    }
+
+    private static (int r, int g, int b, int a) ToRgbaComponents(Vector4 color)
+    {
+        static int ToByte(float component)
+            => (int)Math.Round(Math.Clamp(component, 0f, 1f) * 255f, MidpointRounding.AwayFromZero);
+
+        return (ToByte(color.X), ToByte(color.Y), ToByte(color.Z), ToByte(color.W));
     }
 
     private static double Luminance(Vector4 color)
@@ -50,5 +99,33 @@ public static class UiTheme
         var g = Channel(color.Y);
         var b = Channel(color.Z);
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    /// <summary>Palette entry structure shared with tests and tooling.</summary>
+    public readonly struct UiThemeColor
+    {
+        public UiThemeColor(string token, Vector4 value, bool isBackground, string description)
+        {
+            this.Token = token;
+            this.Value = value;
+            this.IsBackground = isBackground;
+            this.Description = description;
+            this.Hex = ToHex(value);
+            this.Rgba = ToRgba(value);
+        }
+
+        public string Token { get; }
+
+        public Vector4 Value { get; }
+
+        public bool IsBackground { get; }
+
+        public string Description { get; }
+
+        public string Hex { get; }
+
+        public string Rgba { get; }
+
+        public double Alpha => Math.Clamp(this.Value.W, 0f, 1f);
     }
 }
