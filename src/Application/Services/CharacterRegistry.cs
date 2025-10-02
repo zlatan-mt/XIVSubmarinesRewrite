@@ -23,6 +23,7 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
     private readonly object sync = new ();
     private readonly Dictionary<ulong, CharacterDescriptorInternal> descriptors = new ();
     private readonly Dictionary<ulong, DateTime> lastUpdatedUtc = new ();
+    private readonly Dictionary<ulong, DateTime> lastSubmarineOperationUtc = new ();
     private ulong activeCharacterId;
 
     public CharacterRegistry(IClientState clientState, ILogSink log, ISettingsProvider settings)
@@ -42,12 +43,21 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
             var descriptor = new CharacterDescriptorInternal(record.CharacterId);
             descriptor.Update(record.Name, record.World);
             this.descriptors[record.CharacterId] = descriptor;
+
+            // Restore submarine operation history from preferences
+            if (record.HasSubmarineOperations && record.LastSubmarineOperationUtc.HasValue)
+            {
+                this.lastSubmarineOperationUtc[record.CharacterId] = record.LastSubmarineOperationUtc.Value;
+            }
         }
 
         if (this.preferences.LastActiveCharacterId.HasValue)
         {
             this.activeCharacterId = this.preferences.LastActiveCharacterId.Value;
         }
+
+        // Clean up characters without submarine operations on startup
+        this.CleanupCharactersWithoutSubmarineOperations();
 
         this.clientState.Login += this.OnLogin;
         this.clientState.Logout += this.OnLogout;
@@ -93,8 +103,16 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
     {
         var descriptorChanged = false;
         var needsPersist = false;
+        var hasSubmarineOperations = snapshot.Submarines.Count > 0;
+        
         lock (this.sync)
         {
+            // Track submarine operation timestamp if operations exist
+            if (hasSubmarineOperations)
+            {
+                this.lastSubmarineOperationUtc[snapshot.CharacterId] = DateTime.UtcNow;
+            }
+
             if (!this.descriptors.TryGetValue(snapshot.CharacterId, out var descriptor))
             {
                 descriptor = new CharacterDescriptorInternal(snapshot.CharacterId);
@@ -109,9 +127,14 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
             this.lastUpdatedUtc[snapshot.CharacterId] = DateTime.UtcNow;
         }
 
-        if (needsPersist)
+        // Only persist if character has submarine operations
+        if (needsPersist && hasSubmarineOperations)
         {
             this.PersistDescriptor(snapshot.CharacterId);
+        }
+        else if (!hasSubmarineOperations)
+        {
+            this.log.Log(LogLevel.Debug, $"[CharacterRegistry] Character {snapshot.CharacterId} registered but not persisted - no submarine operations");
         }
 
         this.CharacterListChanged?.Invoke(this, EventArgs.Empty);
@@ -181,6 +204,63 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
         lock (this.sync)
         {
             return this.lastUpdatedUtc.TryGetValue(characterId, out var value) ? value : null;
+        }
+    }
+
+    public void CleanupCharactersWithoutSubmarineOperations()
+    {
+        var charactersToRemove = new List<ulong>();
+        lock (this.sync)
+        {
+            foreach (var kvp in this.descriptors)
+            {
+                var characterId = kvp.Key;
+                
+                // Check both memory and persisted flags
+                var hasSubmarineOperationsInMemory = this.lastSubmarineOperationUtc.ContainsKey(characterId);
+                var hasSubmarineOperationsInPreferences = this.preferences.Characters.TryGetValue(characterId, out var record) && record.HasSubmarineOperations;
+                var hasSubmarineOperations = hasSubmarineOperationsInMemory || hasSubmarineOperationsInPreferences;
+                
+                if (!hasSubmarineOperations)
+                {
+                    charactersToRemove.Add(characterId);
+                }
+            }
+
+            // Remove characters without submarine operations
+            foreach (var characterId in charactersToRemove)
+            {
+                this.descriptors.Remove(characterId);
+                this.lastUpdatedUtc.Remove(characterId);
+                this.lastSubmarineOperationUtc.Remove(characterId);
+                this.preferences.Characters.Remove(characterId);
+            }
+        }
+
+        if (charactersToRemove.Count > 0)
+        {
+            this.log.Log(LogLevel.Information, $"[CharacterRegistry] Cleaned up {charactersToRemove.Count} characters without submarine operations");
+            this.SavePreferences();
+            this.CharacterListChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public IReadOnlyList<CharacterDescriptor> GetCharactersWithSubmarineOperations()
+    {
+        lock (this.sync)
+        {
+            var list = new List<CharacterDescriptor>();
+            foreach (var kvp in this.descriptors)
+            {
+                var characterId = kvp.Key;
+                if (this.lastSubmarineOperationUtc.ContainsKey(characterId))
+                {
+                    list.Add(kvp.Value.ToDescriptor());
+                }
+            }
+
+            list.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.Ordinal));
+            return list;
         }
     }
 
@@ -293,11 +373,16 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
                 return;
             }
 
+            var hasSubmarineOperations = this.lastSubmarineOperationUtc.ContainsKey(characterId);
+            var lastOperationUtc = hasSubmarineOperations ? this.lastSubmarineOperationUtc[characterId] : (DateTime?)null;
+
             record = new CharacterIdentityRecord
             {
                 CharacterId = descriptor.CharacterId,
                 Name = descriptor.CurrentName,
                 World = descriptor.CurrentWorld,
+                HasSubmarineOperations = hasSubmarineOperations,
+                LastSubmarineOperationUtc = lastOperationUtc,
             };
 
             this.preferences.Characters[characterId] = record;

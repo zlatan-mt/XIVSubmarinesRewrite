@@ -23,4 +23,8 @@ public sealed class CharacterIdentityRecord
     public string? Name { get; set; }
 
     public string? World { get; set; }
+
+    public bool HasSubmarineOperations { get; set; }
+
+    public System.DateTime? LastSubmarineOperationUtc { get; set; }
 }

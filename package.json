@@ -14,7 +14,8 @@
     "test:ui:main-window": "cd tests/Playwright && npx playwright test --grep \"@main-window\"",
     "test:ui:notification": "cd tests/Playwright && npx playwright test --grep \"@notification\"",
     "test:ui:overview": "cd tests/Playwright && npx playwright test --grep \"@overview\"",
-    "test:ui:dev": "cd tests/Playwright && npx playwright test --grep \"@dev\""
+    "test:ui:dev": "cd tests/Playwright && npx playwright test --grep \"@dev\"",
+    "test:ui:release": "cd tests/Playwright && npx playwright test --grep \"@release\""
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0"

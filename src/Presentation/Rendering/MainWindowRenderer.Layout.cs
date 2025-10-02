@@ -22,72 +22,37 @@ public sealed partial class MainWindowRenderer
 {
     private void DrawToolbar()
     {
-        const float toolbarHeight = 60f;
+        const float toolbarHeight = 72f; // Increased height for better spacing
+        var uiScale = ImGui.GetIO().FontGlobalScale;
+        var scaledPadding = 14f * uiScale;
+        var scaledItemSpacing = 16f * uiScale;
+        
         ImGui.PushStyleColor(ImGuiCol.ChildBg, UiTheme.ToolbarBg);
         ImGui.PushStyleColor(ImGuiCol.Border, UiTheme.ToolbarBorder);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(14f, 10f));
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(16f, 8f));
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(scaledPadding, 12f * uiScale));
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(scaledItemSpacing, 8f * uiScale));
 
         if (ImGui.BeginChild("##main_toolbar", new Vector2(0f, toolbarHeight), true, ImGuiWindowFlags.AlwaysUseWindowPadding | ImGuiWindowFlags.NoScrollbar))
         {
             const ImGuiTableFlags flags = ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.NoBordersInBody;
             if (ImGui.BeginTable("toolbar_table", 3, flags))
             {
-                ImGui.TableSetupColumn("brand", ImGuiTableColumnFlags.WidthStretch, 1.2f);
-                ImGui.TableSetupColumn("metrics", ImGuiTableColumnFlags.WidthStretch, 0.9f);
-                ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthStretch, 0.6f);
+                ImGui.TableSetupColumn("brand", ImGuiTableColumnFlags.WidthStretch, 1.4f);
+                ImGui.TableSetupColumn("metrics", ImGuiTableColumnFlags.WidthStretch, 1.0f);
+                ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthStretch, 0.8f);
                 ImGui.TableNextRow();
 
+                // Brand section with improved layout
                 ImGui.TableSetColumnIndex(0);
-                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10f, 0f));
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextColored(UiTheme.AccentPrimary, "⛵");
-                ImGui.SameLine();
-                ImGui.TextColored(UiTheme.ToolbarText, "XIV Submarines");
-                ImGui.SameLine();
-                ImGui.TextColored(UiTheme.ToolbarMuted, this.versionLabel);
-                ImGui.PopStyleVar();
+                this.DrawBrandSection();
 
+                // Metrics section with better organization
                 ImGui.TableSetColumnIndex(1);
-                var toolbarContrast = UiTheme.ContrastRatio(UiTheme.ToolbarText, UiTheme.ToolbarBg);
-                var windowContrast = UiTheme.ContrastRatio(UiTheme.PrimaryText, UiTheme.WindowBg);
-                ImGui.TextColored(UiTheme.ToolbarMuted, $"Toolbar 1:{toolbarContrast:F2}");
-                ImGui.TextColored(UiTheme.ToolbarMuted, $"Window 1:{windowContrast:F2}");
-                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(6f, 6f));
-                var swatchFlags = ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoPicker;
-                var swatchSize = new Vector2(18f, 18f);
-                ImGui.ColorButton("##toolbar_bg_swatch", UiTheme.ToolbarBg, swatchFlags, swatchSize);
-                ImGui.SameLine();
-                ImGui.ColorButton("##toolbar_text_swatch", UiTheme.ToolbarText, swatchFlags, swatchSize);
-                ImGui.SameLine();
-                ImGui.ColorButton("##window_bg_swatch", UiTheme.WindowBg, swatchFlags, swatchSize);
-                ImGui.SameLine();
-                ImGui.ColorButton("##primary_text_swatch", UiTheme.PrimaryText, swatchFlags, swatchSize);
-                ImGui.PopStyleVar();
+                this.DrawMetricsSection();
 
+                // Actions section
                 ImGui.TableSetColumnIndex(2);
-                var buttonLabel = this.showDeveloperTools ? "DEV • ON" : "DEV • OFF";
-                var buttonWidth = 120f;
-                var cursorX = ImGui.GetCursorPosX();
-                var available = ImGui.GetContentRegionAvail().X;
-                ImGui.SetCursorPosX(cursorX + MathF.Max(0f, available - buttonWidth));
-                var idleColor = this.showDeveloperTools ? UiTheme.AccentPrimary : UiTheme.ToolbarBg;
-                ImGui.PushStyleColor(ImGuiCol.Button, idleColor);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, UiTheme.AccentPrimary);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, UiTheme.AccentPrimary);
-                if (ImGui.Button(buttonLabel, new Vector2(buttonWidth, 0f)))
-                {
-                    this.showDeveloperTools = !this.showDeveloperTools;
-                    this.preferences.ShowDeveloperTools = this.showDeveloperTools;
-                    var history = this.preferences.DevHistory ??= new UiPreferences.DevPanelHistory();
-                    history.LastDeveloperTabToggleUtc = DateTime.UtcNow;
-                    history.DeveloperToolsVisible = this.showDeveloperTools;
-                    this.SavePreferences();
-                }
-
-                ImGui.PopStyleColor(3);
-                ImGui.SameLine();
-                ImGui.TextColored(UiTheme.ToolbarMuted, this.showDeveloperTools ? "開発タブ表示中" : "一般表示");
+                this.DrawActionsSection();
 
                 ImGui.EndTable();
             }
@@ -139,6 +104,134 @@ public sealed partial class MainWindowRenderer
         ImGui.EndChild();
         ImGui.PopStyleVar();
         ImGui.PopStyleColor();
+    }
+
+    private void DrawBrandSection()
+    {
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(12f, 0f));
+        ImGui.AlignTextToFramePadding();
+        
+        // Icon with proper alignment
+        ImGui.TextColored(UiTheme.AccentPrimary, "⛵");
+        ImGui.SameLine();
+        
+        // Product name
+        ImGui.TextColored(UiTheme.ToolbarText, "XIV Submarines");
+        ImGui.SameLine();
+        
+        // Version with truncation if needed
+        var versionText = this.TruncateForWidth(this.versionLabel, 120f);
+        if (versionText != this.versionLabel)
+        {
+            ImGui.TextColored(UiTheme.ToolbarMuted, versionText);
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip($"Version: {this.versionLabel}");
+            }
+        }
+        else
+        {
+            ImGui.TextColored(UiTheme.ToolbarMuted, versionText);
+        }
+        
+        ImGui.PopStyleVar();
+    }
+
+    private void DrawMetricsSection()
+    {
+        // Move metrics to second row to avoid crowding
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 4f));
+        
+        var toolbarContrast = UiTheme.ContrastRatio(UiTheme.ToolbarText, UiTheme.ToolbarBg);
+        var windowContrast = UiTheme.ContrastRatio(UiTheme.PrimaryText, UiTheme.WindowBg);
+        
+        // Contrast ratios on first line
+        ImGui.TextColored(UiTheme.ToolbarMuted, $"T:{toolbarContrast:F1}");
+        ImGui.SameLine();
+        ImGui.TextColored(UiTheme.ToolbarMuted, $"W:{windowContrast:F1}");
+        
+        // Color swatches on second line
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 4f));
+        var swatchFlags = ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoPicker;
+        var swatchSize = new Vector2(16f, 16f);
+        
+        ImGui.ColorButton("##toolbar_bg_swatch", UiTheme.ToolbarBg, swatchFlags, swatchSize);
+        ImGui.SameLine();
+        ImGui.ColorButton("##toolbar_text_swatch", UiTheme.ToolbarText, swatchFlags, swatchSize);
+        ImGui.SameLine();
+        ImGui.ColorButton("##window_bg_swatch", UiTheme.WindowBg, swatchFlags, swatchSize);
+        ImGui.SameLine();
+        ImGui.ColorButton("##primary_text_swatch", UiTheme.PrimaryText, swatchFlags, swatchSize);
+        
+        ImGui.PopStyleVar(2);
+    }
+
+    private void DrawActionsSection()
+    {
+        var buttonLabel = this.showDeveloperTools ? "DEV • ON" : "DEV • OFF";
+        var buttonWidth = 100f;
+        var cursorX = ImGui.GetCursorPosX();
+        var available = ImGui.GetContentRegionAvail().X;
+        ImGui.SetCursorPosX(cursorX + MathF.Max(0f, available - buttonWidth));
+        
+        var idleColor = this.showDeveloperTools ? UiTheme.AccentPrimary : UiTheme.ToolbarBg;
+        ImGui.PushStyleColor(ImGuiCol.Button, idleColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, UiTheme.AccentPrimary);
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, UiTheme.AccentPrimary);
+        
+        if (ImGui.Button(buttonLabel, new Vector2(buttonWidth, 0f)))
+        {
+            this.showDeveloperTools = !this.showDeveloperTools;
+            this.preferences.ShowDeveloperTools = this.showDeveloperTools;
+            var history = this.preferences.DevHistory ??= new UiPreferences.DevPanelHistory();
+            history.LastDeveloperTabToggleUtc = DateTime.UtcNow;
+            history.DeveloperToolsVisible = this.showDeveloperTools;
+            this.SavePreferences();
+        }
+
+        ImGui.PopStyleColor(3);
+        
+        // Status text below button
+        ImGui.SameLine();
+        ImGui.TextColored(UiTheme.ToolbarMuted, this.showDeveloperTools ? "開発中" : "一般");
+    }
+
+    private string TruncateForWidth(string text, float maxWidth)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var textSize = ImGui.CalcTextSize(text);
+        if (textSize.X <= maxWidth)
+        {
+            return text;
+        }
+
+        // Binary search for optimal truncation point
+        var left = 0;
+        var right = text.Length;
+        var bestLength = 0;
+        
+        while (left <= right)
+        {
+            var mid = (left + right) / 2;
+            var truncated = text.Substring(0, mid) + "...";
+            var size = ImGui.CalcTextSize(truncated);
+            
+            if (size.X <= maxWidth)
+            {
+                bestLength = mid;
+                left = mid + 1;
+            }
+            else
+            {
+                right = mid - 1;
+            }
+        }
+
+        return bestLength > 0 ? text.Substring(0, bestLength) + "..." : "...";
     }
 }
 

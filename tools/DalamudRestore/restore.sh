@@ -54,9 +54,28 @@ download_and_extract() {
   TEMP_DIR="$(mktemp -d)"
   local zip_path="$TEMP_DIR/dalamud.zip"
   local payload_dir="$TEMP_DIR/payload"
+  local expected_hash="$2"
 
   echo "[DalamudRestore] Downloading Dalamud package..."
   curl -fsSL "$1" -o "$zip_path"
+
+  if [ -n "$expected_hash" ]; then
+    echo "[DalamudRestore] Verifying package hash..."
+    local actual_hash
+    if command -v sha256sum >/dev/null 2>&1; then
+      actual_hash=$(sha256sum "$zip_path" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+      actual_hash=$(shasum -a 256 "$zip_path" | awk '{print $1}')
+    else
+      echo "[DalamudRestore] Warning: No SHA256 tool found, skipping hash verification." >&2
+    fi
+    
+    if [ -n "$actual_hash" ] && [ "$actual_hash" != "$expected_hash" ]; then
+      echo "[DalamudRestore] Hash mismatch! Expected: $expected_hash, Got: $actual_hash" >&2
+      return 1
+    fi
+    echo "[DalamudRestore] Hash verification passed."
+  fi
 
   echo "[DalamudRestore] Extracting DLLs..."
   unzip -qo "$zip_path" -d "$payload_dir"
@@ -75,32 +94,35 @@ download_and_extract() {
   TEMP_DIR=""
 }
 
-resolve_download_url() {
+resolve_download_info() {
   local version_json
   if ! version_json=$(curl -fsSL "$VERSION_INFO_URL"); then
     return 1
   fi
 
   if command -v node >/dev/null 2>&1; then
-    printf '%s' "$version_json" | node -e 'let data="";process.stdin.on("data",c=>data+=c);process.stdin.on("end",()=>{try{const json=JSON.parse(data);if(json.downloadUrl){console.log(json.downloadUrl);}else{process.exit(1);}}catch(e){process.exit(1);}});'
+    printf '%s' "$version_json" | node -e 'let data="";process.stdin.on("data",c=>data+=c);process.stdin.on("end",()=>{try{const json=JSON.parse(data);console.log(json.downloadUrl||"");console.log(json.sha256||"");}catch(e){process.exit(1);}});'
   elif command -v python3 >/dev/null 2>&1; then
-    printf '%s' "$version_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("downloadUrl",""))'
+    printf '%s' "$version_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("downloadUrl","")); print(data.get("sha256",""))'
   else
     return 1
   fi
 }
 
-DOWNLOAD_URL=""
-if DOWNLOAD_URL=$(resolve_download_url); then
+DOWNLOAD_INFO=""
+if DOWNLOAD_INFO=$(resolve_download_info); then
+  DOWNLOAD_URL=$(echo "$DOWNLOAD_INFO" | sed -n '1p')
+  EXPECTED_HASH=$(echo "$DOWNLOAD_INFO" | sed -n '2p')
+  
   if [ -n "$DOWNLOAD_URL" ]; then
-    if download_and_extract "$DOWNLOAD_URL"; then
+    if download_and_extract "$DOWNLOAD_URL" "$EXPECTED_HASH"; then
       exit 0
     else
       echo "[DalamudRestore] Download failed, attempting vendor fallback..."
     fi
   fi
 else
-  echo "[DalamudRestore] Unable to resolve download URL, attempting vendor fallback..."
+  echo "[DalamudRestore] Unable to resolve download info, attempting vendor fallback..."
 fi
 
 if [ -d "$VENDOR_DIR" ]; then

@@ -47,17 +47,20 @@ if ($allExist) {
 # Dalamud 配布情報の取得とダウンロード
 $versionInfoUrl = "https://kamori.goats.dev/Dalamud/Release/VersionInfo"
 
-function Resolve-DownloadUrl {
+function Resolve-DownloadInfo {
     try {
         $versionInfo = Invoke-RestMethod -Uri $versionInfoUrl -Headers @{ "User-Agent" = "XIVSubmarinesRewrite" }
-        return $versionInfo.downloadUrl
+        return @{
+            Url = $versionInfo.downloadUrl
+            Hash = $versionInfo.sha256
+        }
     } catch {
         Write-Host "[DalamudRestore] Failed to fetch version info: $_" -ForegroundColor Red
         return $null
     }
 }
 
-function Download-And-Extract([string]$downloadUrl) {
+function Download-And-Extract([string]$downloadUrl, [string]$expectedHash) {
     $tempPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "dalamud_" + [System.Guid]::NewGuid().ToString())
     $zipPath = "$tempPath.zip"
     $extractPath = "$tempPath"
@@ -65,6 +68,17 @@ function Download-And-Extract([string]$downloadUrl) {
     try {
         Write-Host "[DalamudRestore] Downloading Dalamud package..." -ForegroundColor Yellow
         Invoke-WebRequest -Uri $downloadUrl -Headers @{ "User-Agent" = "XIVSubmarinesRewrite" } -OutFile $zipPath
+
+        if ($expectedHash) {
+            Write-Host "[DalamudRestore] Verifying package hash..." -ForegroundColor Yellow
+            $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower()
+            $expectedHashLower = $expectedHash.ToLower()
+            
+            if ($actualHash -ne $expectedHashLower) {
+                throw "Hash mismatch! Expected: $expectedHashLower, Got: $actualHash"
+            }
+            Write-Host "[DalamudRestore] Hash verification passed." -ForegroundColor Green
+        }
 
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath)
@@ -90,9 +104,9 @@ function Download-And-Extract([string]$downloadUrl) {
     }
 }
 
-$downloadUrl = Resolve-DownloadUrl
-if ($downloadUrl) {
-    if (Download-And-Extract $downloadUrl) {
+$downloadInfo = Resolve-DownloadInfo
+if ($downloadInfo -and $downloadInfo.Url) {
+    if (Download-And-Extract $downloadInfo.Url $downloadInfo.Hash) {
         exit 0
     } else {
         Write-Host "[DalamudRestore] Falling back to vendor directory copy..." -ForegroundColor Yellow

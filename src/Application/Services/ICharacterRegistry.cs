@@ -18,6 +18,9 @@ public interface ICharacterRegistry
 
     CharacterIdentity? GetIdentity(ulong characterId);
     System.DateTime? GetLastUpdatedUtc(ulong characterId);
+
+    void CleanupCharactersWithoutSubmarineOperations();
+    IReadOnlyList<CharacterDescriptor> GetCharactersWithSubmarineOperations();
 }
 
 public sealed record CharacterDescriptor(ulong CharacterId, string DisplayName);

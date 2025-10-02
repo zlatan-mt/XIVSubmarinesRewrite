@@ -23,9 +23,53 @@ Discord や Notion の Webhook に完了通知を送ることもできます。
 - Dalamud の .NET 9 ランタイムが導入済みであること。
 
 ## インストール手順
-1. ビルド後の `bin/Release/net9.0-windows` から `XIVSubmarinesRewrite.dll`, `manifest.json`, `icon.png` を準備します。
-2. `%AppData%\XIVLauncher\devPlugins\XIVSubmarinesRewrite` にファイルを配置します。
-3. Dalamud を再起動し、プラグインリストで `XIV Submarines Rewrite` を有効化します。
+
+### 開発者向け（ソースからビルド）
+
+1. **Dalamud DLL の準備**
+   ```powershell
+   # Windows
+   .\tools\DalamudRestore\restore.ps1
+   
+   # Linux/Mac
+   ./tools/DalamudRestore/restore.sh
+   ```
+   
+   XIVLauncher がインストール済みの場合は自動でスキップされます。
+
+2. **プロジェクトのビルド**
+   ```bash
+   dotnet build --configuration Release
+   ```
+
+3. **プラグインの配置**
+   - ビルド後、`bin/Release/net9.0-windows` に生成された以下をコピー：
+     - `XIVSubmarinesRewrite.dll`
+     - `manifest.json`
+     - `icon.png`
+   - コピー先: `%AppData%\XIVLauncher\devPlugins\XIVSubmarinesRewrite`
+   - CopyToDevPlugins ターゲットが有効な場合は自動でコピーされます
+
+4. **Dalamud で有効化**
+   - Dalamud を再起動
+   - Plugin Installer で `XIV Submarines Rewrite` を有効化
+
+### UI 開発時の注意点
+
+**タイトルバー UI スケーリング対応**:
+- ツールバーの高さは72px固定（UI スケール100%基準）
+- `ImGui.GetIO().FontGlobalScale` を使用してスケール対応
+- バージョンラベルは120px幅で省略表示、ホバーでツールチップ表示
+- カラーコントラスト情報は2行レイアウト（T:4.5 W:4.2形式）
+
+**キャラクター永続化の仕様**:
+- 潜水艦操作履歴があるキャラクターのみが永続化対象
+- `RegisterSnapshot()` で `snapshot.Submarines.Count == 0` の場合はスキップ
+- 起動時に `CleanupCharactersWithoutSubmarineOperations()` でクリーンアップ
+
+### エンドユーザー向け（リリース版）
+
+リリース版の配布準備中です。公開後は Dalamud Plugin Installer から直接インストールできます。
 
 ## 初回セットアップ
 Dalamud の Plugin Installer から設定画面を開きます。

@@ -34,6 +34,7 @@ internal static class Program
         var swatches = ThemeSwatchFactory.Create(references);
         WriteJson(options.JsonPath, options.RunName, swatches);
         WriteHtml(options.HtmlPath, options.RunName, swatches);
+        WriteSummary(Path.Combine(options.RunRoot, "color-summary.json"), swatches);
 
         Console.WriteLine($"[RendererPreview] Generated {swatches.Count} swatches under {options.RunRoot}.");
         return 0;
@@ -43,6 +44,30 @@ internal static class Program
     {
         var artifact = new RendererPreviewArtifact(runName, DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), swatches);
         var json = JsonSerializer.Serialize(artifact, JsonOptions);
+        File.WriteAllText(path, json, Utf8NoBom);
+    }
+
+    private static void WriteSummary(string path, IReadOnlyList<ThemeSwatch> swatches)
+    {
+        var summary = new
+        {
+            GeneratedAt = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+            TotalColors = swatches.Count,
+            BackgroundColors = swatches.Count(s => s.IsBackground),
+            TextColors = swatches.Count(s => !s.IsBackground),
+            DevColors = swatches.Count(s => s.Token.StartsWith("Dev", StringComparison.Ordinal)),
+            Colors = swatches.Select(s => new
+            {
+                Token = s.Token,
+                Hex = s.Hex,
+                Rgba = s.Rgba,
+                IsBackground = s.IsBackground,
+                Description = s.Description,
+                Role = s.Role,
+            }).ToArray(),
+        };
+
+        var json = JsonSerializer.Serialize(summary, JsonOptions);
         File.WriteAllText(path, json, Utf8NoBom);
     }
 

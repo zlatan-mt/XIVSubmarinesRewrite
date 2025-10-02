@@ -42,11 +42,35 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Cache Dalamud DLLs
+        id: cache-dalamud
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/dalamud-cache
+          key: dalamud-${{ hashFiles('tools/DalamudRestore/restore.sh') }}
+          restore-keys: |
+            dalamud-
+
       - name: Restore Dalamud DLLs
         run: |
-          chmod +x tools/DalamudRestore/restore.sh
-          ./tools/DalamudRestore/restore.sh "$HOME/.local/share/dalamud/dev"
-          echo "DALAMUD_LIB_PATH=$HOME/.local/share/dalamud/dev" >> $GITHUB_ENV
+          DALAMUD_DIR="$HOME/.local/share/dalamud/dev"
+          CACHE_DIR="${{ runner.temp }}/dalamud-cache"
+          
+          if [ "${{ steps.cache-dalamud.outputs.cache-hit }}" = "true" ]; then
+            echo "[UI Tests] Restoring Dalamud DLLs from cache..."
+            mkdir -p "$DALAMUD_DIR"
+            cp -r "$CACHE_DIR"/* "$DALAMUD_DIR/"
+          else
+            echo "[UI Tests] Downloading Dalamud DLLs..."
+            chmod +x tools/DalamudRestore/restore.sh
+            ./tools/DalamudRestore/restore.sh "$DALAMUD_DIR"
+            
+            echo "[UI Tests] Caching Dalamud DLLs for future runs..."
+            mkdir -p "$CACHE_DIR"
+            cp -r "$DALAMUD_DIR"/* "$CACHE_DIR/"
+          fi
+          
+          echo "DALAMUD_LIB_PATH=$DALAMUD_DIR" >> $GITHUB_ENV
 
       - name: Restore .NET dependencies
         run: dotnet restore
@@ -81,23 +105,23 @@ jobs:
             npm test
           fi
 
-      - name: Upload test results
+      - name: Upload Dalamud DLLs artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
-          path: tests/Playwright/test-results
-          if-no-files-found: ignore
+          name: ui-tests-dalamud-dlls
+          path: ${{ runner.temp }}/dalamud-cache
+          if-no-files-found: warn
+          retention-days: 7
 
-      - name: Upload HTML report
+      - name: Upload Playwright artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
-          path: tests/Playwright/playwright-report
+          name: ui-tests-playwright-reports
+          path: |
+            tests/Playwright/test-results
+            tests/Playwright/playwright-report
+            tests/Playwright/.artifacts
           if-no-files-found: ignore
-
-      - name: Upload renderer preview artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: renderer-preview-artifacts
-          path: tests/Playwright/.artifacts
-          if-no-files-found: ignore
+          retention-days: 14

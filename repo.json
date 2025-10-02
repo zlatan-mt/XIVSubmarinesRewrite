@@ -1,18 +1,20 @@
 [
   {
-    "Author": "TBD",
+    "Author": "MonaT",
     "Name": "XIV Submarines Rewrite",
-    "Description": "Work-in-progress rewrite scaffold for the XIV Submarines toolset.",
+    "Description": "Polished single-window UI with Playwright coverage helpers and release-ready metadata.",
     "InternalName": "XIVSubmarinesRewrite",
     "AssemblyVersion": "1.0.0",
     "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 13,
-    "Punchline": "Next-generation submarine workshop tools (WIP)",
-    "IconUrl": "",
-    "ImageUrls": [],
-    "DownloadLinkInstall": "",
-    "DownloadLinkUpdate": "",
-    "LastUpdate": 0
+    "Punchline": "Next-generation submarine workshop tools",
+    "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png",
+    "ImageUrls": [
+      "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png"
+    ],
+    "DownloadLinkInstall": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/latest/download/XIVSubmarinesRewrite.zip",
+    "DownloadLinkUpdate": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/latest/download/XIVSubmarinesRewrite.zip",
+    "LastUpdate": 1759363200
   }
 ]
