@@ -20,7 +20,8 @@ public sealed record NotificationEnvelope(
     DateTime Arrival,
     VoyageStatus Status,
     SnapshotConfidence Confidence,
-    string HashKey)
+    string HashKey,
+    bool ForceImmediate)
 {
     public static NotificationEnvelope Create(
         ulong characterId,
@@ -33,7 +34,8 @@ public sealed record NotificationEnvelope(
         DateTime? departure,
         DateTime arrival,
         VoyageStatus status,
-        SnapshotConfidence confidence)
+        SnapshotConfidence confidence,
+        bool forceImmediate = false)
     {
         var normalizedArrival = NormalizeTimestamp(arrival);
         DateTime? normalizedDeparture = departure.HasValue ? NormalizeTimestamp(departure.Value) : null;
@@ -50,7 +52,8 @@ public sealed record NotificationEnvelope(
             normalizedArrival,
             status,
             confidence,
-            hashKey);
+            hashKey,
+            forceImmediate);
     }
 
     public static string ComputeHashKey(ulong characterId, VoyageId voyageId, DateTime arrivalUtc)

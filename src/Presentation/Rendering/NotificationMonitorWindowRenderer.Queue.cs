@@ -199,6 +199,7 @@ public sealed partial class NotificationMonitorWindowRenderer
 
                 var arrival = voyage.Arrival ?? DateTime.UtcNow;
                 var identity = this.characterRegistry.GetIdentity(snapshot.CharacterId);
+                var forceImmediate = includeUnderway; // ensure ForceNotify bypasses aggregator suppression when testing underway cycles
                 var envelope = NotificationEnvelope.Create(
                     snapshot.CharacterId,
                     snapshot.CharacterName ?? identity?.Name,
@@ -210,7 +211,8 @@ public sealed partial class NotificationMonitorWindowRenderer
                     voyage.Departure,
                     arrival,
                     voyage.Status,
-                    snapshot.Confidence);
+                    snapshot.Confidence,
+                    forceImmediate);
 
                 if (this.queue.TryEnqueue(envelope, forceDuplicate: true))
                 {

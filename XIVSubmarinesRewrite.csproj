@@ -4,8 +4,22 @@
   <PropertyGroup>
     <DalamudLibPath Condition="'$(DalamudLibPath)' == '' and '$(DALAMUD_LIB_PATH)' != ''">$(DALAMUD_LIB_PATH)</DalamudLibPath>
     <DalamudLibPath Condition="'$(DalamudLibPath)' == '' and '$(APPDATA)' != ''">$(APPDATA)\XIVLauncher\addon\Hooks\dev</DalamudLibPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <DevPluginsDir Condition="'$(DevPluginsDir)' == '' and '$(APPDATA)' != ''">$(APPDATA)\XIVLauncher\devPlugins\XIVSubmarinesRewrite</DevPluginsDir>
   </PropertyGroup>
+
+  <Target Name="ResolveDevPluginsDir" BeforeTargets="CopyToDevPlugins" Condition="'$(DevPluginsDir)' == ''">
+    <ItemGroup>
+      <_ExistingDevDir Include="/mnt/c/Users/*/AppData/Roaming/XIVLauncher/devPlugins/XIVSubmarinesRewrite/manifest.json" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_ExistingDevDir)' != ''">
+      <_DevDirCandidate>@(_ExistingDevDir)</_DevDirCandidate>
+      <DevPluginsDir>$([System.IO.Path]::GetDirectoryName($(_DevDirCandidate).Split(';')[0].Trim()))</DevPluginsDir>
+    </PropertyGroup>
+    <Message Importance="Low" Text="[ResolveDevPluginsDir] DevPluginsDir=$(DevPluginsDir)" Condition="'$(DevPluginsDir)' != ''" />
+  </Target>
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -17,13 +31,13 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Version>1.1.0</Version>
-    <FileVersion>1.1.0.0</FileVersion>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <Version>1.1.2</Version>
+    <FileVersion>1.1.2.0</FileVersion>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup>
     <BuildTimestamp Condition="'$(BuildTimestamp)' == ''">$([System.DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'"))</BuildTimestamp>
-    <InformationalVersion>1.1.0+build.$(BuildTimestamp)</InformationalVersion>
+    <InformationalVersion>1.1.2+build.$(BuildTimestamp)</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <Optimize>true</Optimize>
@@ -77,14 +91,21 @@
   <PropertyGroup>
     <SkipPack>true</SkipPack>
   </PropertyGroup>
-  <Target Name="CopyToDevPlugins" AfterTargets="Build" Condition=" '$(DevPluginsDir)' != '' ">
-    <Message Text="Copying plugin outputs to $(DevPluginsDir)" Importance="low" />
-    <MakeDir Directories="$(DevPluginsDir)" />
+  <Target Name="CopyToDevPlugins" AfterTargets="Build">
+    <Message Text="Copying plugin outputs to $(DevPluginsDir)" Importance="Low" Condition="'$(DevPluginsDir)' != ''" />
+    <ItemGroup>
+      <_DevOutputDirs Include="$(DevPluginsDir)" Condition="'$(DevPluginsDir)' != ''" />
+      <_DevOutputDirs Include="/mnt/c/Users/*/AppData/Roaming/XIVLauncher/devPlugins/XIVSubmarinesRewrite" Condition="'$(DevPluginsDir)' == ''" />
+    </ItemGroup>
+    <ItemGroup>
+      <_ResolvedDevOutputDirs Include="@(_DevOutputDirs)" Condition="'%(Identity)' != '' and Exists('%(Identity)')" />
+    </ItemGroup>
+    <MakeDir Directories="@(_ResolvedDevOutputDirs)" Condition="'@(_ResolvedDevOutputDirs)' != ''" />
     <ItemGroup>
       <_DevFiles Include="$(TargetDir)$(AssemblyName).dll" />
       <_DevFiles Include="$(TargetDir)manifest.json" />
       <_DevFiles Include="$(TargetDir)icon.png" />
     </ItemGroup>
-    <Copy SourceFiles="@(_DevFiles)" DestinationFolder="$(DevPluginsDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_DevFiles)" DestinationFolder="%(_ResolvedDevOutputDirs.Identity)" SkipUnchangedFiles="true" Condition="'@(_ResolvedDevOutputDirs)' != ''" />
   </Target>
 </Project>

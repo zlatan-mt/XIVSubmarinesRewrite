@@ -38,11 +38,12 @@ public sealed partial class VoyageCompletionProjection
             voyage.Departure,
             voyage.Arrival.Value,
             voyage.Status,
-            snapshot.Confidence);
+            snapshot.Confidence,
+            forceImmediate);
 
         if (forceImmediate)
         {
-            if (this.queue.TryEnqueue(envelope))
+            if (this.queue.TryEnqueue(envelope, forceDuplicate: true))
             {
                 this.log.Log(LogLevel.Debug, $"[Notifications] Enqueued voyage notification {envelope.HashKey} status={voyage.Status} arrival={voyage.Arrival}.");
             }

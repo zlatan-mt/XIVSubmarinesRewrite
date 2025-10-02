@@ -192,8 +192,8 @@ public sealed partial class OverviewWindowRenderer
         if (nextArrivalEntry?.Arrival is DateTime arrivalUtc)
         {
             nextArrivalLabel = useCompact
-                ? arrivalUtc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture)
-                : arrivalUtc.ToLocalTime().ToString("M/d(ddd) HH:mm", CultureInfo.CurrentCulture);
+                ? arrivalUtc.ToLocalTime().ToString("M/d(ddd) HH:mm", CultureInfo.InvariantCulture)
+                : arrivalUtc.ToLocalTime().ToString("M/d(ddd) HH:mm", CultureInfo.InvariantCulture);
         }
 
         var underway = submarines.Count(s => s.Status == VoyageStatus.Underway);
@@ -201,7 +201,7 @@ public sealed partial class OverviewWindowRenderer
 
         var lastUpdatedUtc = this.viewModel.LastUpdatedUtc;
         var lastUpdatedLabel = lastUpdatedUtc.HasValue
-            ? TimeZoneInfo.ConvertTimeFromUtc(lastUpdatedUtc.Value, TimeZoneInfo.Local).ToString(useCompact ? "HH:mm:ss" : "M/d(ddd) HH:mm:ss", CultureInfo.CurrentCulture)
+            ? TimeZoneInfo.ConvertTimeFromUtc(lastUpdatedUtc.Value, TimeZoneInfo.Local).ToString(useCompact ? "HH:mm:ss" : "M/d(ddd) HH:mm:ss", CultureInfo.InvariantCulture)
             : "--";
 
         var nextArrivalText = useCompact ? "次の帰港" : "次の帰港: " + nextArrivalLabel;

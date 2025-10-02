@@ -77,6 +77,9 @@ public sealed class DiscordNotificationBatcher : IDisposable
             {
                 state.RestartTimer();
                 this.ScheduleFlush(key, state);
+                this.log.Log(
+                    LogLevel.Trace,
+                    $"[Notifications] Discord batch item added character={state.CharacterLabel} status={state.Status} count={state.Items.Count} window={this.batchWindow.TotalMilliseconds:F0}ms.");
             }
         }
 

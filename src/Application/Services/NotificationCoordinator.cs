@@ -102,9 +102,27 @@ public sealed class NotificationCoordinator
         await this.notionClient.RecordVoyageCompletionAsync(notification, notionPayload, cancellationToken).ConfigureAwait(false);
 
         var decision = this.discordCycleAggregator.Process(notification);
+        if (envelope.ForceImmediate && notification.Status == VoyageStatus.Underway && decision.IsSuppressed)
+        {
+            decision = DiscordCycleNotificationAggregator.Decision.Forward();
+            this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate bypassed cycle suppression for underway notification. Route: Forward");
+        }
+        
+        // ForceImmediate の経路を明示的にログ出力
+        if (envelope.ForceImmediate)
+        {
+            var route = decision.Aggregate is not null ? "Direct" : decision.IsSuppressed ? "Suppressed" : "Batched";
+            this.log.Log(LogLevel.Debug, $"[Notifications] ForceImmediate notification route: {route} for character={notification.CharacterLabel} status={notification.Status}");
+        }
         if (decision.Aggregate is { } aggregate)
         {
             await this.discordClient.SendVoyageBatchAsync(aggregate.CharacterLabel, aggregate.Payload, aggregate.TimestampUtc, cancellationToken).ConfigureAwait(false);
+            
+            // ForceImmediate の場合は Aggregator をリセットして次回の ForceNotify を可能にする
+            if (envelope.ForceImmediate)
+            {
+                this.discordCycleAggregator.ResetCycle(notification.CharacterId);
+            }
             return;
         }
 
@@ -115,6 +133,12 @@ public sealed class NotificationCoordinator
 
         var discordPayload = this.formatter.CreateDiscordPayload(notification);
         await this.discordBatcher.EnqueueAsync(notification, discordPayload, cancellationToken).ConfigureAwait(false);
+        
+        // ForceImmediate の場合は Aggregator をリセットして次回の ForceNotify を可能にする
+        if (envelope.ForceImmediate)
+        {
+            this.discordCycleAggregator.ResetCycle(notification.CharacterId);
+        }
     }
 
     private static string BuildCharacterLabel(NotificationEnvelope envelope)

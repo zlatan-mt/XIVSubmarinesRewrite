@@ -44,6 +44,7 @@ public sealed class InMemoryNotificationQueue : INotificationQueue, IDisposable
         {
             this.CleanupExpiredRecords(now);
 
+            // ForceDuplicate の場合は既存の DeliveryRecord を無視して再キュー
             if (!forceDuplicate && this.deliveryRecords.TryGetValue(hash, out var record))
             {
                 if (record.State == NotificationDeliveryState.Delivered && !record.IsExpired(now))
@@ -65,8 +66,20 @@ public sealed class InMemoryNotificationQueue : INotificationQueue, IDisposable
             var workItem = new NotificationWorkItem(envelope, now);
             this.EnqueueInternal(workItem);
 
+            // ForceDuplicate の場合は既存の DeliveryRecord を Pending にリセット
             var expires = now + this.options.DeliveryRecordTtl;
-            this.deliveryRecords[hash] = new NotificationDeliveryRecord(hash, NotificationDeliveryState.Pending, expires);
+            if (forceDuplicate && this.deliveryRecords.TryGetValue(hash, out var existingRecord))
+            {
+                existingRecord.State = NotificationDeliveryState.Pending;
+                existingRecord.ExpiresAtUtc = expires;
+                existingRecord.LastError = null;
+                existingRecord.DeliveredAtUtc = null;
+                existingRecord.DeadLetteredAtUtc = null;
+            }
+            else
+            {
+                this.deliveryRecords[hash] = new NotificationDeliveryRecord(hash, NotificationDeliveryState.Pending, expires);
+            }
         }
 
         this.signal.Release();

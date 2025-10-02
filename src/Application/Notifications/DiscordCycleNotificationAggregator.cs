@@ -68,6 +68,16 @@ public sealed class DiscordCycleNotificationAggregator
         }
     }
 
+    /// <summary>Resets the cycle state for a specific character to allow new ForceNotify requests.</summary>
+    public void ResetCycle(ulong characterId)
+    {
+        if (this.states.TryGetValue(characterId, out var state))
+        {
+            state.Reset();
+            this.log.Log(LogLevel.Debug, $"[Notifications] Discord aggregator cycle reset for character={characterId}.");
+        }
+    }
+
     private CycleState GetState(ulong characterId)
     {
         if (!this.states.TryGetValue(characterId, out var state))

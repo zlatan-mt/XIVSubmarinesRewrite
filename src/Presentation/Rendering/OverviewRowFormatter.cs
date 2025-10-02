@@ -54,7 +54,7 @@ internal static class OverviewRowFormatter
             return "--";
         }
 
-        return arrival.Value.ToLocalTime().ToString("M/d HH:mm", CultureInfo.CurrentCulture);
+        return arrival.Value.ToLocalTime().ToString("M/d(ddd) HH:mm", CultureInfo.InvariantCulture);
     }
 
     public static string FormatRemainingCompact(TimeSpan? remaining)
@@ -85,7 +85,7 @@ internal static class OverviewRowFormatter
             return "--";
         }
 
-        return arrival.Value.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
+        return arrival.Value.ToLocalTime().ToString("M/d(ddd) HH:mm", CultureInfo.InvariantCulture);
     }
 
     public static string BuildWrappedRouteLabel(string routeLabel)

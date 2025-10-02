@@ -14,6 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.1.2] - 2025-10-02
+
+### Fixed
+
+- ForceNotify 連打時に DeliveryRecord の重複判定が誤検出され通知がブロックされる問題を解消。
+- DiscordCycleNotificationAggregator を ForceImmediate 後にリセットし、毎回新しい Discord バッチを生成できるように調整。
+- NotificationCoordinator が強制送信後にアグリゲーターを初期化して、後続の ForceNotify が正しく起動するように。
+
+### Changed
+
+- ForceImmediate 通知経路のデバッグ/トレースログを拡充し、Discord バッチの開始・リセットを追跡しやすくしました。
+
+### Testing
+
+- 2025-10-03: Dalamud DEV 環境で ForceNotifyUnderway を用いた即時送信を確認し、Discord へのバッチ flush と cycle reset ログを取得。
+
 ## [1.1.0] - 2025-10-02
 
 ### Fixed
