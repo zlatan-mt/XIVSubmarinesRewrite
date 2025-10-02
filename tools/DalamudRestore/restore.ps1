@@ -44,60 +44,92 @@ if ($allExist) {
     exit 0
 }
 
-# GitHub から最新リリース情報を取得
-Write-Host "[DalamudRestore] Fetching Dalamud release information..." -ForegroundColor Yellow
-$releaseUrl = "https://api.github.com/repos/goatcorp/Dalamud/releases/latest"
+# Dalamud 配布情報の取得とダウンロード
+$versionInfoUrl = "https://kamori.goats.dev/Dalamud/Release/VersionInfo"
 
-try {
-    $release = Invoke-RestMethod -Uri $releaseUrl -Headers @{ "User-Agent" = "XIVSubmarinesRewrite" }
-    $version = $release.tag_name
-    Write-Host "[DalamudRestore] Latest Dalamud version: $version" -ForegroundColor Green
-} catch {
-    Write-Host "[DalamudRestore] Failed to fetch release information: $_" -ForegroundColor Red
-    Write-Host "[DalamudRestore] Using fallback: copying from vendor directory if available" -ForegroundColor Yellow
-    
-    # フォールバック: vendor ディレクトリからコピー
-    $vendorDir = Join-Path $PSScriptRoot "..\..\vendor\Dalamud"
-    if (Test-Path $vendorDir) {
-        Write-Host "[DalamudRestore] Copying from vendor directory: $vendorDir" -ForegroundColor Yellow
-        foreach ($dll in $requiredDlls) {
-            $sourcePath = Join-Path $vendorDir $dll
-            $targetPath = Join-Path $TargetDir $dll
-            if (Test-Path $sourcePath) {
-                Copy-Item $sourcePath $targetPath -Force
-                Write-Host "[DalamudRestore] Copied: $dll" -ForegroundColor Green
-            }
-        }
-        exit 0
+function Resolve-DownloadUrl {
+    try {
+        $versionInfo = Invoke-RestMethod -Uri $versionInfoUrl -Headers @{ "User-Agent" = "XIVSubmarinesRewrite" }
+        return $versionInfo.downloadUrl
+    } catch {
+        Write-Host "[DalamudRestore] Failed to fetch version info: $_" -ForegroundColor Red
+        return $null
     }
-    
-    Write-Host "[DalamudRestore] No vendor directory found. Please manually download Dalamud DLLs." -ForegroundColor Red
-    exit 1
 }
 
-# 最新版がインストール済みの XIVLauncher から DLL をコピー
-$installedPath = "$env:APPDATA\XIVLauncher\addon\Hooks\dev"
-if (Test-Path $installedPath) {
-    Write-Host "[DalamudRestore] Found installed Dalamud at: $installedPath" -ForegroundColor Green
-    Write-Host "[DalamudRestore] Copying DLLs..." -ForegroundColor Yellow
-    
+function Download-And-Extract([string]$downloadUrl) {
+    $tempPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "dalamud_" + [System.Guid]::NewGuid().ToString())
+    $zipPath = "$tempPath.zip"
+    $extractPath = "$tempPath"
+
+    try {
+        Write-Host "[DalamudRestore] Downloading Dalamud package..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $downloadUrl -Headers @{ "User-Agent" = "XIVSubmarinesRewrite" } -OutFile $zipPath
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath)
+
+        foreach ($dll in $requiredDlls) {
+            $sourcePath = Join-Path $extractPath $dll
+            if (-not (Test-Path $sourcePath)) {
+                throw "Required DLL $dll not found in downloaded package."
+            }
+            $targetPath = Join-Path $TargetDir $dll
+            Copy-Item $sourcePath $targetPath -Force
+            Write-Host "[DalamudRestore] Installed: $dll" -ForegroundColor Green
+        }
+
+        Write-Host "[DalamudRestore] Restore completed successfully!" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "[DalamudRestore] Download or extraction failed: $_" -ForegroundColor Red
+        return $false
+    } finally {
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
+    }
+}
+
+$downloadUrl = Resolve-DownloadUrl
+if ($downloadUrl) {
+    if (Download-And-Extract $downloadUrl) {
+        exit 0
+    } else {
+        Write-Host "[DalamudRestore] Falling back to vendor directory copy..." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[DalamudRestore] Falling back to vendor directory copy..." -ForegroundColor Yellow
+}
+
+# フォールバック: vendor ディレクトリからコピー
+$vendorDir = Join-Path $PSScriptRoot "..\..\vendor\Dalamud"
+if (Test-Path $vendorDir) {
+    Write-Host "[DalamudRestore] Copying from vendor directory: $vendorDir" -ForegroundColor Yellow
     foreach ($dll in $requiredDlls) {
-        $sourcePath = Join-Path $installedPath $dll
+        $sourcePath = Join-Path $vendorDir $dll
         $targetPath = Join-Path $TargetDir $dll
-        
         if (Test-Path $sourcePath) {
             Copy-Item $sourcePath $targetPath -Force
             Write-Host "[DalamudRestore] Copied: $dll" -ForegroundColor Green
         } else {
-            Write-Host "[DalamudRestore] Warning: $dll not found at $sourcePath" -ForegroundColor Yellow
+            Write-Host "[DalamudRestore] Warning: $dll not found in vendor directory." -ForegroundColor Yellow
         }
     }
-    
-    Write-Host "[DalamudRestore] Restore completed successfully!" -ForegroundColor Green
-    exit 0
+
+    $missing = $false
+    foreach ($dll in $requiredDlls) {
+        if (-not (Test-Path (Join-Path $TargetDir $dll))) {
+            $missing = $true
+            break
+        }
+    }
+
+    if (-not $missing) {
+        Write-Host "[DalamudRestore] Restore completed via vendor fallback." -ForegroundColor Green
+        exit 0
+    }
 }
 
-Write-Host "[DalamudRestore] No installed Dalamud found. Please install XIVLauncher with Dalamud." -ForegroundColor Red
-Write-Host "[DalamudRestore] Alternative: Place DLLs in vendor/Dalamud directory." -ForegroundColor Yellow
+Write-Host "[DalamudRestore] Failed to restore Dalamud DLLs." -ForegroundColor Red
+Write-Host "[DalamudRestore] Please ensure internet access or place DLLs in vendor/Dalamud." -ForegroundColor Red
 exit 1
-

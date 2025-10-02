@@ -7,6 +7,11 @@
 
 このディレクトリは Dalamud 参照 DLL のフォールバック配置先です。
 
+通常は `tools/DalamudRestore/restore.(sh|ps1)` が `https://kamori.goats.dev/Dalamud/Release/VersionInfo` から
+最新版のパッケージをダウンロードして DLL を展開します。
+ネットワークにアクセスできない環境では、ここに必要な DLL を配置してから
+復元スクリプトを実行してください。
+
 
 ## 概要
 
@@ -69,4 +74,3 @@ CI で使用する DLL をコミットする場合は、このディレクトリ
 - `tools/DalamudRestore/restore.sh` - Linux/Mac 用 DLL 復元スクリプト
 - `Local.props.example` - ローカル開発環境の設定例
 - `XIVSubmarinesRewrite.csproj` - DLL 参照設定
-
