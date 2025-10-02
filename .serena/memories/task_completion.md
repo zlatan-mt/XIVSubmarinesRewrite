@@ -1,4 +1,0 @@
-- Run `dotnet build -c Release` to ensure the plugin compiles and post-build copy completes when applicable.
-- Execute `npm run test:ui` (or the relevant scoped script) to validate Playwright flows touched by the change.
-- Manually sanity check Dalamud plugin behavior if the change affects live game integrations; review `logs/` output for warnings.
-- Update README or manifest metadata whenever settings, commands, or assets change.

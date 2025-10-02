@@ -1,4 +1,0 @@
-- Purpose: Dalamud plugin that rebuilds the Vectal submarine scheduler so FFXIV players can track submarine voyages, review ETA lists, and send webhook notifications.
-- Tech: C#/.NET 9 plugin targeting Dalamud API level 13 with ImGui UI; optional Playwright UI automation driven through npm in tests/Playwright.
-- Structure: src folder splits acquisition, domain, infrastructure, integrations, and presentation layers with view models and renderers; configs like manifest.json and icon assets live at repo root; Playwright harness under tests/Playwright.
-- Outputs: Build produces DLL plus manifest/icon in bin/<config>/net9.0-windows and post-build step copies into the local Dalamud devPlugins folder when APPDATA is set.
