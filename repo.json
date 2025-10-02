@@ -9,9 +9,9 @@
     "ApplicableVersion": "any",
     "DalamudApiLevel": 13,
     "Punchline": "Next-generation submarine workshop tools",
-    "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png",
     "ImageUrls": [
-      "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png"
+      "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png"
     ],
     "DownloadLinkInstall": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/latest/download/XIVSubmarinesRewrite.zip",
     "DownloadLinkUpdate": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/latest/download/XIVSubmarinesRewrite.zip",
