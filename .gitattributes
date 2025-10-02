@@ -1,0 +1,23 @@
+# PATH: apps/XIVSubmarinesRewrite/.gitattributes
+# DESCRIPTION: Git attributes for export-ignore and line ending control
+# REASON: Optimize release ZIP contents and ensure consistent line endings
+# RELEVANT FILES: XIVSubmarinesRewrite.csproj, .github/workflows/verify.yml
+
+# Export ignore - exclude from release ZIP
+tests/ export-ignore
+.github/ export-ignore
+tools/ export-ignore
+vendor/ export-ignore
+plans/ export-ignore
+*.md export-ignore
+
+# Line ending control
+*.cs text eol=crlf
+*.ts text eol=crlf
+*.tsx text eol=crlf
+*.json text eol=crlf
+*.md text eol=crlf
+*.yml text eol=crlf
+*.yaml text eol=crlf
+*.sh text eol=lf
+*.ps1 text eol=crlf
