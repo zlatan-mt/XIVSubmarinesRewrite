@@ -115,23 +115,23 @@ jobs:
       - name: Package release candidate
         if: success()
         run: |
-          RELEASE_DIR="release-candidate"
-          mkdir -p "$RELEASE_DIR"
+          # Create optimized release ZIP using git archive
+          git archive --format=zip HEAD -o XIVSubmarinesRewrite.zip
           
-          # Copy plugin files
-          cp bin/Release/net9.0-windows/XIVSubmarinesRewrite.dll "$RELEASE_DIR/"
-          cp bin/Release/net9.0-windows/manifest.json "$RELEASE_DIR/"
-          cp icon.png "$RELEASE_DIR/"
+          # Add built DLL to the ZIP
+          zip XIVSubmarinesRewrite.zip bin/Release/net9.0-windows/XIVSubmarinesRewrite.dll
           
           # Create version info
-          echo "Build: $(date -u +%Y%m%dT%H%M%SZ)" > "$RELEASE_DIR/build-info.txt"
-          echo "Commit: ${{ github.sha }}" >> "$RELEASE_DIR/build-info.txt"
-          echo "Branch: ${{ github.ref_name }}" >> "$RELEASE_DIR/build-info.txt"
+          echo "Build: $(date -u +%Y%m%dT%H%M%SZ)" > build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+          zip XIVSubmarinesRewrite.zip build-info.txt
           
-          # Create ZIP
-          cd "$RELEASE_DIR"
-          zip -r ../XIVSubmarinesRewrite.zip .
-          cd ..
+          # Show contents
+          echo "Release ZIP contents:"
+          unzip -l XIVSubmarinesRewrite.zip
+          echo "ZIP file size:"
+          ls -lh XIVSubmarinesRewrite.zip
           
           echo "Release candidate packaged successfully"
 
