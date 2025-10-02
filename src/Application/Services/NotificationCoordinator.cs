@@ -101,11 +101,14 @@ public sealed class NotificationCoordinator
         var notionPayload = this.formatter.CreateNotionPayload(notification);
         await this.notionClient.RecordVoyageCompletionAsync(notification, notionPayload, cancellationToken).ConfigureAwait(false);
 
-        var decision = this.discordCycleAggregator.Process(notification);
-        if (envelope.ForceImmediate && notification.Status == VoyageStatus.Underway && decision.IsSuppressed)
+        // ForceImmediate でも通常の Process を使用（状態更新は維持、リセットのみ制御）
+        var decision = this.discordCycleAggregator.Process(notification, envelope.ForceImmediate);
+        
+        // ForceImmediate の場合は Suppress を Forward にフォールバック（即時送信を保証）
+        if (envelope.ForceImmediate && decision.IsSuppressed)
         {
             decision = DiscordCycleNotificationAggregator.Decision.Forward();
-            this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate bypassed cycle suppression for underway notification. Route: Forward");
+            this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate bypassed cycle suppression for immediate delivery. Route: Forward");
         }
         
         // ForceImmediate の経路を明示的にログ出力
@@ -118,8 +121,8 @@ public sealed class NotificationCoordinator
         {
             await this.discordClient.SendVoyageBatchAsync(aggregate.CharacterLabel, aggregate.Payload, aggregate.TimestampUtc, cancellationToken).ConfigureAwait(false);
             
-            // ForceImmediate の場合は Aggregator をリセットして次回の ForceNotify を可能にする
-            if (envelope.ForceImmediate)
+            // 通常の集約フローでは送信後に状態をリセット（ForceImmediate は除く）
+            if (!envelope.ForceImmediate)
             {
                 this.discordCycleAggregator.ResetCycle(notification.CharacterId);
             }
@@ -134,8 +137,9 @@ public sealed class NotificationCoordinator
         var discordPayload = this.formatter.CreateDiscordPayload(notification);
         await this.discordBatcher.EnqueueAsync(notification, discordPayload, cancellationToken).ConfigureAwait(false);
         
-        // ForceImmediate の場合は Aggregator をリセットして次回の ForceNotify を可能にする
-        if (envelope.ForceImmediate)
+        // ForceImmediate の場合は集約状態を一切変更しない
+        // 通常の集約フローでは送信後に状態をリセット
+        if (!envelope.ForceImmediate)
         {
             this.discordCycleAggregator.ResetCycle(notification.CharacterId);
         }

@@ -25,9 +25,18 @@ public sealed class DiscordCycleNotificationAggregator
         this.log = log;
     }
 
-    public Decision Process(VoyageNotification notification)
+    public Decision Process(VoyageNotification notification, bool forceImmediate = false)
     {
         var state = this.GetState(notification.CharacterId);
+        
+        // デバッグログ：現在の状態を明示的に記録
+        this.log.Log(LogLevel.Trace, $"[Notifications] Discord aggregator processing character={notification.CharacterLabel} status={notification.Status} forceImmediate={forceImmediate} cycleReady={state.CycleReady} completed={state.Completed.Count} underway={state.Underway.Count}");
+        
+        if (forceImmediate)
+        {
+            this.log.Log(LogLevel.Debug, $"[Notifications] Discord aggregator ForceImmediate mode: state will be updated but not reset on flush");
+        }
+        
         switch (notification.Status)
         {
             case VoyageStatus.Completed:
@@ -42,7 +51,7 @@ public sealed class DiscordCycleNotificationAggregator
 
                 if (state.CycleReady && this.TryCreateAggregate(state, out var aggregateFromCompletion))
                 {
-                    return this.BuildAggregateDecision(state, aggregateFromCompletion, "completion");
+                    return this.BuildAggregateDecision(state, aggregateFromCompletion, "completion", forceImmediate);
                 }
 
                 return Decision.Suppress();
@@ -53,20 +62,23 @@ public sealed class DiscordCycleNotificationAggregator
 
                 if (!state.CycleReady)
                 {
+                    this.log.Log(LogLevel.Trace, $"[Notifications] Discord aggregator cycle not ready, suppressing notification. cycleReady={state.CycleReady} completed={state.Completed.Count}");
                     return Decision.Suppress();
                 }
 
                 if (!this.TryCreateAggregate(state, out var aggregateFromUnderway))
                 {
+                    this.log.Log(LogLevel.Trace, $"[Notifications] Discord aggregator could not create aggregate, suppressing notification. underway={state.Underway.Count}");
                     return Decision.Suppress();
                 }
 
-                return this.BuildAggregateDecision(state, aggregateFromUnderway, "underway");
+                return this.BuildAggregateDecision(state, aggregateFromUnderway, "underway", forceImmediate);
 
             default:
                 return Decision.Forward();
         }
     }
+
 
     /// <summary>Resets the cycle state for a specific character to allow new ForceNotify requests.</summary>
     public void ResetCycle(ulong characterId)
@@ -128,13 +140,23 @@ public sealed class DiscordCycleNotificationAggregator
         return state.CycleReady && aggregate.Length >= CycleSize;
     }
 
-    private Decision BuildAggregateDecision(CycleState state, VoyageNotification[] aggregate, string reason)
+    private Decision BuildAggregateDecision(CycleState state, VoyageNotification[] aggregate, string reason, bool forceImmediate = false)
     {
         var payload = this.formatter.CreateDiscordBatchPayload(VoyageStatus.Underway, aggregate[0].CharacterLabel, aggregate);
         var latestArrival = aggregate[^1].ArrivalUtc;
         this.log.Log(LogLevel.Information,
             $"[Notifications] Discord aggregator flushing cycle reason={reason} character={aggregate[0].CharacterLabel} submarines={aggregate.Length} latestArrival={latestArrival:O}.");
-        state.Reset();
+        
+        // ForceImmediate の場合は状態をリセットしない（通常運用の CycleReady を維持）
+        if (!forceImmediate)
+        {
+            state.Reset();
+        }
+        else
+        {
+            this.log.Log(LogLevel.Debug, "[Notifications] Discord aggregator preserving cycle state for ForceImmediate.");
+        }
+        
         return Decision.Aggregated(aggregate[0].CharacterLabel, payload, latestArrival);
     }
 }

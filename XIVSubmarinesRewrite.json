@@ -9,7 +9,7 @@
   "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png",
   "ImageUrls": ["https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png"],
   "AssemblyName": "XIVSubmarinesRewrite.dll",
-  "AssemblyVersion": "1.1.2",
+  "AssemblyVersion": "1.1.3",
   "DalamudApiLevel": 13,
   "Tags": ["rewrite", "wip"]
 }

@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.1.3] - 2025-10-03
+
+### Fixed
+
+- ForceNotifyUnderway 実行時に Discord 集約状態がクリアされず、通常の 4 隻まとめ通知が維持されるようロジックを調整。
+- ForceImmediate 経路でも通知キューへの即時送信を保証し、Suppressed 判定時に Forward へフォールバックするよう修正。
+
+### Changed
+
+- ForceNotify 経路のデバッグログを拡充し、CycleReady や Underway 集計の状態を追跡しやすくしました。
+
 ## [1.1.2] - 2025-10-02
 
 ### Fixed
