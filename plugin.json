@@ -11,9 +11,9 @@
     "wip"
   ],
   "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
-  "IconUrl": "icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png",
   "ImageUrls": [
-    "icon.png"
+    "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png"
   ],
   "Changelog": "1.0.0: First feature-complete single-window release with Playwright coverage.",
   "AssemblyVersion": "1.0.0"

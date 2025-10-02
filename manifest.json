@@ -12,9 +12,9 @@
     "rewrite",
     "wip"
   ],
-  "IconUrl": "icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png",
   "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
   "ImageUrls": [
-    "icon.png"
+    "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/main/icon.png"
   ]
 }
