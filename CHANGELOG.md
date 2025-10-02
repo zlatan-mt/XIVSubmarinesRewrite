@@ -12,13 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [1.1.0] - 2025-10-02
+
+### Fixed
+
+- **Dalamud 配信互換性**: manifest / plugin / repo メタデータのアイコン参照を絶対 URL 化し、Dalamud プラグインインストーラで発生していた `Invalid request URI` 例外を修正。
+
 ### Changed
 
-#### Phase11: リポジトリ公開方針整備
-- **リポジトリ構成の最適化**: 利用者向けにクリーンな構成に変更
-- **開発資料の分離**: 開発用ドキュメントをローカルブランチで管理
-- **ファイル構成の簡素化**: 不要な開発用ディレクトリを削除
-- **README の改善**: 利用者目線の内容に最適化
+- **リリースメタデータ更新**: Dalamud 向け配布 URL を v1.1.0 用に更新し、`repo.json` から最新版 ZIP を直接取得できるよう調整。
+- **プロジェクトバージョン更新**: アセンブリ / ファイル / InformationalVersion を 1.1.0 系列へ引き上げ。
+- **リポジトリ公開方針整備**: 利用者向けのクリーンな構成と README 改善を反映。
 
 ## [1.0.0] - 2025-10-02
 

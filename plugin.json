@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png"
   ],
-  "Changelog": "1.0.0: First feature-complete single-window release with Playwright coverage.",
-  "AssemblyVersion": "1.0.0"
+  "Changelog": "1.1.0: Icon delivery fixes and Dalamud repo compatibility.",
+  "AssemblyVersion": "1.1.0"
 }
