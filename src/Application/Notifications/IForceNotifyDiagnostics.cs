@@ -17,6 +17,12 @@ public interface IForceNotifyDiagnostics
 
     /// <summary>Returns true when ForceNotifyUnderway is currently enabled.</summary>
     bool IsForceNotifyEnabled { get; }
+
+    /// <summary>Records a manual trigger action for diagnostic purposes.</summary>
+    void RecordManualTrigger(ForceNotifyManualTrigger entry);
+
+    /// <summary>Gets recent manual trigger log entries.</summary>
+    IReadOnlyList<ForceNotifyManualTrigger> GetManualTriggerLog();
 }
 
 /// <summary>Immutable snapshot of ForceNotifyUnderway cooldown state per submarine.</summary>
@@ -28,3 +34,12 @@ public sealed record ForceNotifyStateSnapshot(
     TimeSpan Remaining,
     string Reason);
 
+
+/// <summary>Represents a manual ForceNotify trigger recorded for diagnostics.</summary>
+public sealed record ForceNotifyManualTrigger(
+    DateTime TriggeredAtUtc,
+    ulong CharacterId,
+    string? CharacterName,
+    string? World,
+    bool IncludeUnderway,
+    int NotificationsEnqueued);

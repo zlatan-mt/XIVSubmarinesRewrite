@@ -31,6 +31,13 @@ public static class UiTheme
     public static readonly Vector4 SuccessText = new (0.18f, 0.58f, 0.38f, 1f);
     public static readonly Vector4 ErrorText = new (0.92f, 0.30f, 0.28f, 1f);
 
+    // DEV-specific colors for developer tools and debugging UI.
+    public static readonly Vector4 DevAccent = new (0.85f, 0.45f, 0.12f, 1f);
+    public static readonly Vector4 DevBannerBg = new (0.22f, 0.12f, 0.05f, 0.88f);
+    public static readonly Vector4 DevBannerText = new (0.95f, 0.78f, 0.45f, 1f);
+    public static readonly Vector4 DevDangerBg = new (0.32f, 0.08f, 0.08f, 0.92f);
+    public static readonly Vector4 DevDangerText = new (0.98f, 0.55f, 0.52f, 1f);
+
     private static readonly IReadOnlyList<UiThemeColor> PaletteValues = Array.AsReadOnly(new[]
     {
         new UiThemeColor("WindowBg", WindowBg, true, "Main window background"),
@@ -46,6 +53,11 @@ public static class UiTheme
         new UiThemeColor("WarningText", WarningText, false, "Warning states"),
         new UiThemeColor("SuccessText", SuccessText, false, "Success states"),
         new UiThemeColor("ErrorText", ErrorText, false, "Error highlight"),
+        new UiThemeColor("DevAccent", DevAccent, false, "DEV accent color"),
+        new UiThemeColor("DevBannerBg", DevBannerBg, true, "DEV banner background"),
+        new UiThemeColor("DevBannerText", DevBannerText, false, "DEV banner text"),
+        new UiThemeColor("DevDangerBg", DevDangerBg, true, "DEV danger background"),
+        new UiThemeColor("DevDangerText", DevDangerText, false, "DEV danger text"),
     });
 
     /// <summary>Tokenized palette that keeps RendererPreview と Playwright テストを同期します。</summary>

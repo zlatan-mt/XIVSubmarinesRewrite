@@ -15,6 +15,7 @@ using ImGui = Dalamud.Bindings.ImGui.ImGui;
 using ImGuiTableColumnFlags = Dalamud.Bindings.ImGui.ImGuiTableColumnFlags;
 using ImGuiTableFlags = Dalamud.Bindings.ImGui.ImGuiTableFlags;
 using ImGuiTreeNodeFlags = Dalamud.Bindings.ImGui.ImGuiTreeNodeFlags;
+using XIVSubmarinesRewrite.Application.Notifications;
 
 public sealed partial class NotificationMonitorWindowRenderer
 {
@@ -127,6 +128,7 @@ public sealed partial class NotificationMonitorWindowRenderer
             this.CardWidth = cardWidth;
             this.CardHeight = cardHeight;
             this.StackSpacingY = stackSpacingY;
+            this.breakpointList = new[] { twoColumnThreshold };
         }
 
         public float AvailableWidth { get; }
@@ -138,9 +140,9 @@ public sealed partial class NotificationMonitorWindowRenderer
         public float CardHeight { get; }
         public float StackSpacingY { get; }
         public int ColumnCount => this.UsesTwoColumn ? 2 : 1;
-        public IReadOnlyList<float> Breakpoints => this.breakpointList ??= new[] { this.TwoColumnThreshold };
+        public IReadOnlyList<float> Breakpoints => this.breakpointList;
 
-        private IReadOnlyList<float>? breakpointList;
+        private readonly IReadOnlyList<float> breakpointList;
 
         public static NotificationLayoutMetrics Create(float availableWidth, float panelHeight, float spacingX, float twoColumnThreshold)
         {
@@ -201,6 +203,38 @@ public sealed partial class NotificationMonitorWindowRenderer
 
         ImGui.TextColored(UiTheme.AccentPrimary, this.layoutTelemetryMessage);
     }
+
+    private void SaveDevManualLog(ForceNotifyManualTrigger entry)
+    {
+        try
+        {
+            var nowUtc = entry.TriggeredAtUtc.ToUniversalTime();
+            var dateSegment = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var timestamp = nowUtc.ToString("HH-mm-ss-fff", CultureInfo.InvariantCulture);
+            var directory = Path.Combine(AppContext.BaseDirectory, "logs", dateSegment, "dev-panel");
+            Directory.CreateDirectory(directory);
+            var filePath = Path.Combine(directory, $"manual-{timestamp}.json");
+            var payload = new
+            {
+                entry.CharacterId,
+                entry.CharacterName,
+                entry.World,
+                entry.IncludeUnderway,
+                entry.NotificationsEnqueued,
+                TriggeredAtUtc = nowUtc,
+            };
+            var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+            this.layoutTelemetryMessage = $"DEV ログ保存: manual-{timestamp}.json";
+            this.layoutTelemetryExpiryUtc = DateTime.UtcNow.AddSeconds(5);
+        }
+        catch (Exception error)
+        {
+            this.layoutTelemetryMessage = $"DEV ログ保存失敗: {error.Message}";
+            this.layoutTelemetryExpiryUtc = DateTime.UtcNow.AddSeconds(5);
+        }
+    }
+
 
     private readonly struct LayoutTelemetryRecord
     {

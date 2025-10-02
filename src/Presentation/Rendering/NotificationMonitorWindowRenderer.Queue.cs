@@ -169,20 +169,20 @@ public sealed partial class NotificationMonitorWindowRenderer
         this.RevalidateChannelUrls();
     }
 
-    private void TriggerManualNotification()
+    private int TriggerManualNotification()
     {
         var characterId = this.characterRegistry.ActiveCharacterId;
         if (characterId == 0)
         {
             this.queueViewModel.Refresh();
-            return;
+            return 0;
         }
 
         var snapshot = this.snapshotCache.GetSnapshot(characterId);
         if (snapshot is null)
         {
             this.queueViewModel.Refresh();
-            return;
+            return 0;
         }
 
         var includeUnderway = this.editingSettings.ForceNotifyUnderway;
@@ -223,6 +223,8 @@ public sealed partial class NotificationMonitorWindowRenderer
         {
             this.queueViewModel.Refresh();
         }
+
+        return enqueued;
     }
 
     private static void WriteStringToBuffer(string? value, byte[] buffer)

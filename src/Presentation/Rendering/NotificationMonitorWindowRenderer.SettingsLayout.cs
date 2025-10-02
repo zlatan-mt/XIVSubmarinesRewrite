@@ -83,31 +83,6 @@ public sealed partial class NotificationMonitorWindowRenderer
         return changed;
     }
 
-    private bool RenderDeveloperOptions()
-    {
-        var changed = false;
-        if (!ImGui.TreeNodeEx("開発オプション", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            return false;
-        }
-
-        ImGui.TextColored(UiTheme.MutedText, "テスト用の一時的な動作変更です。通常運用では無効のままにしてください。");
-        var forceNotify = this.editingSettings.ForceNotifyUnderway;
-        if (ImGui.Checkbox("出航中でも通知を送信 (開発用)", ref forceNotify))
-        {
-            this.editingSettings.ForceNotifyUnderway = forceNotify;
-            changed = true;
-        }
-
-        if (ImGui.Button("選択キャラクターの通知を即時送信"))
-        {
-            this.TriggerManualNotification();
-        }
-
-        ImGui.TreePop();
-        return changed;
-    }
-
     private void RenderIdentityRecoveryControls()
     {
         ImGui.TextColored(UiTheme.MutedText, "キャラクター名の復元");

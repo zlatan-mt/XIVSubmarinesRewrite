@@ -1,0 +1,22 @@
+{
+  "_comment_path": "apps/XIVSubmarinesRewrite/package.json",
+  "_comment_summary": "Root npm entry to orchestrate Playwright scripts",
+  "_comment_reason": "Allows running UI tests from repository root",
+  "_comment_related": "tests/Playwright/package.json, tests/Playwright/playwright.config.ts",
+  "name": "xivsubmarinesrewrite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:ui",
+    "test:ui": "cd tests/Playwright && npx playwright test",
+    "test:ui:headed": "cd tests/Playwright && npx playwright test --headed",
+    "playwright:install": "cd tests/Playwright && npx playwright install",
+    "test:ui:main-window": "cd tests/Playwright && npx playwright test --grep \"@main-window\"",
+    "test:ui:notification": "cd tests/Playwright && npx playwright test --grep \"@notification\"",
+    "test:ui:overview": "cd tests/Playwright && npx playwright test --grep \"@overview\"",
+    "test:ui:dev": "cd tests/Playwright && npx playwright test --grep \"@dev\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}

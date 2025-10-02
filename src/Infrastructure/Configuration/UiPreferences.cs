@@ -3,6 +3,8 @@
 // 起動時のウィンドウ表示やキャラクター選択を復元できるようにするため存在します
 // RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Presentation/Rendering/OverviewWindowRenderer.cs, apps/XIVSubmarinesRewrite/src/Infrastructure/Configuration/DalamudJsonSettingsProvider.cs
 
+using System;
+
 namespace XIVSubmarinesRewrite.Infrastructure.Configuration;
 
 /// <summary>User interface preferences persisted across sessions.</summary>
@@ -19,4 +21,21 @@ public sealed class UiPreferences
     public float MainWindowHeight { get; set; } = 520f;
 
     public bool ShowDeveloperTools { get; set; } = false;
+
+    public DevPanelHistory DevHistory { get; set; } = new DevPanelHistory();
+
+    public sealed class DevPanelHistory
+    {
+        public DateTime? LastDeveloperTabToggleUtc { get; set; }
+
+        public bool DeveloperToolsVisible { get; set; }
+
+        public DateTime? LastForceNotifyToggleUtc { get; set; }
+
+        public bool ForceNotifyEnabled { get; set; }
+
+        public DateTime? LastManualTriggerUtc { get; set; }
+
+        public string? LastManualTriggerSummary { get; set; }
+    }
 }

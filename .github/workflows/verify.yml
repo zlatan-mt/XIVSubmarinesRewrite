@@ -1,32 +1,29 @@
-# apps/XIVSubmarinesRewrite/.github/workflows/ui-tests.yml
-# Playwright UI tests workflow for Phase6 automation
-# Ensures npm test runs in CI and stores reports for review
-# RELEVANT FILES: apps/XIVSubmarinesRewrite/package.json, apps/XIVSubmarinesRewrite/tests/Playwright/playwright.config.ts, apps/XIVSubmarinesRewrite/tests/Playwright/utils/renderer-preview.ts
+# apps/XIVSubmarinesRewrite/.github/workflows/verify.yml
+# フルビルドと主要 UI テストをまとめて実行する Verify ワークフローです
+# Phase7-D 以降のリリース品質チェックを自動化するため存在します
+# RELEVANT FILES: apps/XIVSubmarinesRewrite/.github/workflows/ui-tests.yml, apps/XIVSubmarinesRewrite/package.json, apps/XIVSubmarinesRewrite/tests/Playwright/notification-layout.spec.ts
 
-name: UI Tests
+name: Verify
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - '**'
   workflow_dispatch:
     inputs:
       grep:
         description: 'Playwright --grep pattern override'
         required: false
-        default: ''
+        default: '@theme|@notification|@overview'
 
 jobs:
-  playwright:
+  verify:
     runs-on: ubuntu-latest
     env:
       DOTNET_NOLOGO: true
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
       PLAYWRIGHT_BROWSERS_PATH: 0
-      PLAYWRIGHT_GREP: ${{ github.event.inputs.grep || '' }}
+      PLAYWRIGHT_GREP: ${{ github.event.inputs.grep || '@theme|@notification|@overview' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,43 +58,32 @@ jobs:
       - name: Install Playwright browsers
         run: npm run playwright:install
 
-      - name: Clean Playwright artifacts
-        run: |
-          rm -rf tests/Playwright/test-results
-          rm -rf tests/Playwright/playwright-report
-          rm -rf tests/Playwright/.artifacts
-
-      - name: Build .NET projects
+      - name: Build solution
         run: dotnet build --configuration Release
 
-      - name: Run .NET tests
+      - name: Run unit tests
         run: dotnet test --configuration Release --no-build
 
-      - name: Run Playwright tests
-        run: |
-          if [ -n "${PLAYWRIGHT_GREP}" ]; then
-            npm run test:ui -- --grep "${PLAYWRIGHT_GREP}"
-          else
-            npm test
-          fi
+      - name: Run Playwright smoke
+        run: npm run test:ui -- --grep "${PLAYWRIGHT_GREP}"
 
-      - name: Upload test results
+      - name: Upload UI test results
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
+          name: verify-playwright-test-results
           path: tests/Playwright/test-results
           if-no-files-found: ignore
 
-      - name: Upload HTML report
+      - name: Upload UI HTML report
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
+          name: verify-playwright-html-report
           path: tests/Playwright/playwright-report
           if-no-files-found: ignore
 
       - name: Upload renderer preview artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: renderer-preview-artifacts
+          name: verify-renderer-preview-artifacts
           path: tests/Playwright/.artifacts
           if-no-files-found: ignore

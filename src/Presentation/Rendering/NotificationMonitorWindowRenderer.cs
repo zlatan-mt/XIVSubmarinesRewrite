@@ -36,6 +36,8 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     private readonly ICharacterRegistry characterRegistry;
     private readonly DiscordNotificationBatcher discordBatcher;
     private readonly IForceNotifyDiagnostics forceNotifyDiagnostics;
+    private readonly UiPreferences preferences;
+    private readonly DevNotificationPanel devPanel;
     private NotificationSettings editingSettings;
     private bool settingsDirty;
     private readonly byte[] discordUrlBuffer = new byte[512];
@@ -69,6 +71,8 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
         this.characterRegistry = characterRegistry;
         this.discordBatcher = discordBatcher;
         this.forceNotifyDiagnostics = forceNotifyDiagnostics;
+        this.preferences = settingsProvider.Get<UiPreferences>();
+        this.devPanel = new DevNotificationPanel(this.preferences, settingsProvider, this.forceNotifyDiagnostics, this.TriggerManualNotification, this.SaveDevManualLog);
         this.editingSettings = this.settings.Clone();
         this.LoadBuffersFromSettings();
         this.RevalidateChannelUrls();
@@ -123,7 +127,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     public void RenderDeveloperTab()
     {
         ImGui.PushID("xsr_notify_dev_tab");
-        var changed = this.RenderDeveloperOptions();
+        var changed = this.devPanel.Render(ref this.editingSettings, formValid: true, allowUnsafeActions: true, this.CreateDevContext);
 
         ImGui.Separator();
         this.RenderForceNotifyDiagnosticsSection();
@@ -190,17 +194,7 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             if (includeDeveloperOptions)
             {
                 ImGui.Separator();
-                if (!formValid)
-                {
-                    ImGui.BeginDisabled();
-                }
-
-                changed |= this.RenderDeveloperOptions();
-
-                if (!formValid)
-                {
-                    ImGui.EndDisabled();
-                }
+                changed |= this.devPanel.Render(ref this.editingSettings, formValid, allowUnsafeActions: false, this.CreateDevContext);
             }
 
             if (changed)
@@ -215,6 +209,16 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
 
         ImGui.PopStyleVar(2);
         ImGui.PopStyleColor();
+    }
+
+    private DevNotificationPanel.DevContext CreateDevContext()
+    {
+        var characterId = this.characterRegistry.ActiveCharacterId;
+        var snapshot = characterId != 0 ? this.snapshotCache.GetSnapshot(characterId) : null;
+        var identity = this.characterRegistry.GetIdentity(characterId);
+        var characterName = snapshot?.CharacterName ?? identity?.Name;
+        var world = snapshot?.WorldName ?? identity?.World;
+        return new DevNotificationPanel.DevContext(characterId, characterName, world, this.editingSettings.ForceNotifyUnderway);
     }
 
 }

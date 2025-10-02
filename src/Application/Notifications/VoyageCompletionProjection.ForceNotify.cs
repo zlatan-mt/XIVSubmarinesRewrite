@@ -59,5 +59,30 @@ public sealed partial class VoyageCompletionProjection
         }
     }
 
+    public void RecordManualTrigger(ForceNotifyManualTrigger entry)
+    {
+        lock (this.gate)
+        {
+            this.manualTriggerLog.Enqueue(entry);
+            while (this.manualTriggerLog.Count > ManualTriggerLogLimit)
+            {
+                this.manualTriggerLog.Dequeue();
+            }
+        }
+
+        var characterLabel = entry.CharacterId == 0
+            ? "unknown"
+            : $"{entry.CharacterName ?? "?"}@{entry.World ?? "?"}";
+        this.log.Log(LogLevel.Trace, $"[Notifications] Manual ForceNotify trigger recorded for {characterLabel} count={entry.NotificationsEnqueued} includeUnderway={entry.IncludeUnderway}.");
+    }
+
+    public IReadOnlyList<ForceNotifyManualTrigger> GetManualTriggerLog()
+    {
+        lock (this.gate)
+        {
+            return this.manualTriggerLog.ToArray();
+        }
+    }
+
     private readonly record struct ForceNotifyState(DateTime CooldownUntilUtc, DateTime? LastArrivalUtc, int? LastLoggedWholeMinutes, string Reason, DateTime LastTriggerUtc);
 }

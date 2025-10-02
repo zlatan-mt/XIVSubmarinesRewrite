@@ -30,10 +30,13 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private readonly Dictionary<SubmarineId, ForceNotifyState> forceNotifyStates = new ();
     private readonly PendingVoyageNotificationStore pendingNotifications = new (CompletedArrivalDuplicateTolerance);
     private readonly Dictionary<SubmarineId, DateTime> lastCompletedArrivals = new ();
+    private readonly Queue<ForceNotifyManualTrigger> manualTriggerLog = new ();
     private readonly object gate = new ();
     private bool disposed;
 
     private bool ShouldNotifyUnderway => this.notificationSettings.NotifyVoyageUnderway || this.notificationSettings.ForceNotifyUnderway;
+
+    private const int ManualTriggerLogLimit = 10;
 
     public VoyageCompletionProjection(
         SnapshotCache cache,

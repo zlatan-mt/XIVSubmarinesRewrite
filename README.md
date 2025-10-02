@@ -71,6 +71,54 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 
 初回は `npm install --prefix tests/Playwright` を実行して依存を揃えてください。
 
+## UI カラーパレット
+黒と白を基調とし、アクセントはディープブルーです。
+
+- WindowBg: #0D0D0F でメイン背景を統一します。
+- AccentPrimary: #1F5CD1 で操作要素を強調します。
+- ErrorText: #EB4D47 で警告とエラーを示します。
+- docs/ui/theme-final.jsonc に完全な一覧があります。
+
+## CI ワークフロー
+GitHub Actions の Verify で .NET と Playwright をまとめて検証します。
+
+- `gh workflow run verify.yml` で手動起動できます。
+- `gh workflow run ui-tests.yml` でタグ指定の UI テストを再実行できます。
+- 成功すると artifacts に Playwright レポートが残ります。
+
+## Playwright タグ実行
+シナリオごとにタグで実行を切り替えられます。
+
+- `npm run test:ui -- --grep "@theme"` で配色検証を実行します。
+- `npm run test:ui -- --grep "@notification"` で通知フォームを確認します。
+- `npm run test:ui -- --grep "@overview"` で Overview を確認します。
+- `npm run test:ui -- --grep "@dev"` で DEV タブのロジックを確認します。
+
+## DEV 操作ログ
+開発タブでは履歴とミニログを確認できます。
+
+- ForceNotify の手動トグルは時刻付きで保存されます。
+- 手動送信は最大 10 件の JSON が `logs/<date>/dev-panel` に保存されます。
+- メインウィンドウの DEV バナーで直近の送信要約を確認できます。
+
+### DEV タブの使い方
+
+ツールバーの「DEV • OFF」ボタンをクリックすると開発タブが表示されます。
+
+DEV タブでは以下の機能を利用できます：
+
+- **ForceNotifyUnderway トグル**: 出航中でも通知を送信するテストモード
+- **即時送信ボタン**: 選択キャラクターの通知を手動でキューに追加
+- **トースト通知**: 送信結果を 3 秒間視覚的にフィードバック
+- **手動送信ログ**: 最新 10 件の送信履歴をテーブル表示
+- **DEV サマリーバナー**: メインウィンドウ上部に最終操作の概要を表示
+
+手動送信は通知設定が有効でフォームが正しい場合のみ実行できます。
+
+ForceNotifyUnderway は危険操作のため、オレンジ色の警告バナーが表示されます。
+
+開発タブを閉じるには、再度「DEV • ON」ボタンをクリックしてください。
+
 ## 既知の制限
 再構築中のため UI や文面は予告なく変わります。
 
