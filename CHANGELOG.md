@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Phase11: リポジトリ公開方針整備
+- **リポジトリ構成の最適化**: 利用者向けにクリーンな構成に変更
+- **開発資料の分離**: 開発用ドキュメントをローカルブランチで管理
+- **ファイル構成の簡素化**: 不要な開発用ディレクトリを削除
+- **README の改善**: 利用者目線の内容に最適化
+
 ## [1.0.0] - 2025-10-02
 
 ### Added
