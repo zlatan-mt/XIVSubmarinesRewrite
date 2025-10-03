@@ -103,24 +103,25 @@ public sealed class NotificationCoordinator
 
         // ForceImmediate でも通常の Process を使用（状態更新は維持、リセットのみ制御）
         var decision = this.discordCycleAggregator.Process(notification, envelope.ForceImmediate);
-        
-        // ForceImmediate の場合は Suppress を Forward にフォールバック（即時送信を保証）
-        if (envelope.ForceImmediate && decision.IsSuppressed)
+
+        // ForceImmediate でも Completed は即時送信したいので Forward へフォールバック
+        if (envelope.ForceImmediate && decision.IsSuppressed && notification.Status == VoyageStatus.Completed)
         {
             decision = DiscordCycleNotificationAggregator.Decision.Forward();
-            this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate bypassed cycle suppression for immediate delivery. Route: Forward");
+            this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate bypassed cycle suppression for completed voyage delivery. Route: Forward");
         }
-        
+
         // ForceImmediate の経路を明示的にログ出力
         if (envelope.ForceImmediate)
         {
             var route = decision.Aggregate is not null ? "Direct" : decision.IsSuppressed ? "Suppressed" : "Batched";
             this.log.Log(LogLevel.Debug, $"[Notifications] ForceImmediate notification route: {route} for character={notification.CharacterLabel} status={notification.Status}");
         }
+
         if (decision.Aggregate is { } aggregate)
         {
             await this.discordClient.SendVoyageBatchAsync(aggregate.CharacterLabel, aggregate.Payload, aggregate.TimestampUtc, cancellationToken).ConfigureAwait(false);
-            
+
             // 通常の集約フローでは送信後に状態をリセット（ForceImmediate は除く）
             if (!envelope.ForceImmediate)
             {
@@ -131,12 +132,16 @@ public sealed class NotificationCoordinator
 
         if (decision.IsSuppressed)
         {
+            if (envelope.ForceImmediate)
+            {
+                this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate suppression retained to avoid duplicate Discord delivery.");
+            }
             return;
         }
 
         var discordPayload = this.formatter.CreateDiscordPayload(notification);
         await this.discordBatcher.EnqueueAsync(notification, discordPayload, cancellationToken).ConfigureAwait(false);
-        
+
         // ForceImmediate の場合は集約状態を一切変更しない
         // 通常の集約フローでは送信後に状態をリセット
         if (!envelope.ForceImmediate)
