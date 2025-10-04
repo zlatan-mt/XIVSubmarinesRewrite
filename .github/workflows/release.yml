@@ -1,0 +1,70 @@
+# XIV Submarines Rewrite Release Workflow
+# GitHubリリースの自動化ワークフロー
+# タグプッシュ時に自動でリリースを作成するため存在します
+# RELEVANT FILES: RELEASE_NOTES_v1.1.4.md, CHANGELOG.md, manifest.json
+
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      
+      - name: Create Release Package
+        run: |
+          mkdir release-package
+          copy "bin\Release\net9.0-windows\XIVSubmarinesRewrite.dll" "release-package\"
+          copy "manifest.json" "release-package\"
+          copy "plugin.json" "release-package\"
+          copy "icon.png" "release-package\"
+          copy "icon.128.png" "release-package\"
+          copy "CHANGELOG.md" "release-package\"
+          copy "README.md" "release-package\"
+          if (Test-Path "RELEASE_NOTES_*.md") { copy "RELEASE_NOTES_*.md" "release-package\" }
+          Compress-Archive -Path "release-package\*" -DestinationPath "XIVSubmarinesRewrite.zip"
+      
+      - name: Get Release Notes
+        id: get_release_notes
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $releaseNotesFile = "RELEASE_NOTES_$tag.md"
+          if (Test-Path $releaseNotesFile) {
+            $content = Get-Content $releaseNotesFile -Raw
+            echo "notes<<EOF" >> $env:GITHUB_OUTPUT
+            echo $content >> $env:GITHUB_OUTPUT
+            echo "EOF" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "notes=Release $tag" >> $env:GITHUB_OUTPUT
+          }
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: XIV Submarines Rewrite ${{ github.ref_name }}
+          body: ${{ steps.get_release_notes.outputs.notes }}
+          files: XIVSubmarinesRewrite.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
