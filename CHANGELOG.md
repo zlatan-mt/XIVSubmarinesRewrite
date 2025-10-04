@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.1.4] - 2025-10-04
+
+### Fixed
+
+- ForceNotifyUnderway の ForceImmediate 通知で 4 隻がそろうまで Discord 送信を待機し、単体通知が発生しないよう集約を強制 priming。
+- ForceImmediate 経路のサイクルリセットを調整し、強制集約後に次の ForceNotify が正しく新しいバッチを開始するように。
+
+### Testing
+
+- NotificationCoordinatorForceImmediateTests に ForceImmediate 単独サイクルを検証するケースを追加し、ユニットテストで回帰を防止。
+
 ## [1.1.3] - 2025-10-03
 
 ### Fixed
@@ -190,4 +201,3 @@ _No unreleased changes._
 
 [Unreleased]: https://github.com/mona-ty/XIVSubmarinesRewrite/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/mona-ty/XIVSubmarinesRewrite/releases/tag/v1.0.0
-
