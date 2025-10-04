@@ -30,29 +30,50 @@ jobs:
           $dalamudDir = "$env:APPDATA\XIVLauncher\addon\Hooks\dev"
           New-Item -ItemType Directory -Path $dalamudDir -Force
           
-          # Copy DLLs from vendor directory
+          # Check vendor directory and required DLLs
           $vendorDir = "vendor\Dalamud"
+          $requiredDlls = @("Dalamud.dll", "Dalamud.Bindings.ImGui.dll", "FFXIVClientStructs.dll", "InteropGenerator.Runtime.dll", "Lumina.dll", "Lumina.Excel.dll")
+          
+          # Check if all required DLLs exist in vendor directory
+          $missing = @()
           if (Test-Path $vendorDir) {
-            Write-Host "Copying Dalamud DLLs from vendor directory to $dalamudDir..."
-            Copy-Item "$vendorDir\*.dll" $dalamudDir -Force
-            Get-ChildItem $dalamudDir -Name "*.dll" | ForEach-Object { Write-Host "Copied: $_" }
-            
-            # Verify all required DLLs are present
-            $requiredDlls = @("Dalamud.dll", "Dalamud.Bindings.ImGui.dll", "FFXIVClientStructs.dll", "InteropGenerator.Runtime.dll", "Lumina.dll", "Lumina.Excel.dll")
-            $missing = @()
             foreach ($dll in $requiredDlls) {
-              if (-not (Test-Path (Join-Path $dalamudDir $dll))) {
+              if (-not (Test-Path (Join-Path $vendorDir $dll))) {
                 $missing += $dll
               }
             }
-            if ($missing.Count -gt 0) {
-              Write-Host "Missing DLLs: $($missing -join ', ')" -ForegroundColor Red
+          } else {
+            Write-Host "Vendor directory not found, all DLLs are missing." -ForegroundColor Yellow
+            $missing = $requiredDlls
+          }
+          
+          if ($missing.Count -gt 0) {
+            Write-Host "Missing DLLs in vendor directory: $($missing -join ', ')" -ForegroundColor Yellow
+            Write-Host "Running restore script to download missing DLLs..." -ForegroundColor Cyan
+            .\tools\DalamudRestore\restore.ps1
+          }
+          
+          # Copy DLLs from vendor directory to target location
+          if (Test-Path $vendorDir) {
+            Write-Host "Copying Dalamud DLLs from vendor directory to $dalamudDir..." -ForegroundColor Cyan
+            Copy-Item "$vendorDir\*.dll" $dalamudDir -Force
+            Get-ChildItem $dalamudDir -Name "*.dll" | ForEach-Object { Write-Host "Copied: $_" }
+            
+            # Final verification
+            $finalMissing = @()
+            foreach ($dll in $requiredDlls) {
+              if (-not (Test-Path (Join-Path $dalamudDir $dll))) {
+                $finalMissing += $dll
+              }
+            }
+            if ($finalMissing.Count -gt 0) {
+              Write-Host "Final check failed - Missing DLLs: $($finalMissing -join ', ')" -ForegroundColor Red
               exit 1
             }
-            Write-Host "All required DLLs are present." -ForegroundColor Green
+            Write-Host "All required DLLs are present in target directory." -ForegroundColor Green
           } else {
-            Write-Host "Vendor directory not found, running restore script..."
-            .\tools\DalamudRestore\restore.ps1
+            Write-Host "Vendor directory still not found after restore attempt." -ForegroundColor Red
+            exit 1
           }
           
           # Set environment variable for .csproj
