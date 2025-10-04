@@ -79,6 +79,11 @@ jobs:
           # Set environment variable for .csproj
           echo "DALAMUD_LIB_PATH=$dalamudDir" >> $env:GITHUB_ENV
       
+      - name: Add custom NuGet sources
+        run: |
+          dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+          dotnet nuget list source
+      
       - name: Restore dependencies
         run: dotnet restore
       

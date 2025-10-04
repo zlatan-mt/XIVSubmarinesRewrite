@@ -88,7 +88,6 @@
   <ItemGroup>
     <PackageReference Include="DalamudPackager" Version="13.1.0" />
     <PackageReference Include="Dalamud" Version="13.1.0" />
-    <PackageReference Include="Lumina" Version="4.1.0" />
     <PackageReference Include="FFXIVClientStructs" Version="4.1.0" />
   </ItemGroup>
   <PropertyGroup>
