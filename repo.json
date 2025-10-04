@@ -15,6 +15,10 @@
     ],
     "DownloadLinkInstall": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/download/v1.1.4/XIVSubmarinesRewrite.zip",
     "DownloadLinkUpdate": "https://github.com/mona-ty/XIVSubmarinesRewrite/releases/download/v1.1.4/XIVSubmarinesRewrite.zip",
-    "LastUpdate": 1759574133
+    "LastUpdate": 1759582972,
+    "_comment_path": "apps/XIVSubmarinesRewrite/repo.json",
+    "_comment_summary": "Dalamud 用配布リスト定義ファイル",
+    "_comment_reason": "Dalamud のプラグインリストから最新版を参照させるため",
+    "_comment_related": "manifest.json, plugin.json, RELEASE_NOTES_v1.1.4.md"
   }
 ]
