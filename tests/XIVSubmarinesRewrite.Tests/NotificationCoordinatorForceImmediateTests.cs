@@ -53,6 +53,31 @@ public sealed class NotificationCoordinatorForceImmediateTests
         Assert.Equal(4, batch.Payload.Fields.Count);
     }
 
+    [Fact]
+    public async Task ForceImmediateUnderway_PrimesAggregateWithoutCompletedCycle()
+    {
+        var log = new TestLogSink();
+        var discord = new RecordingDiscordClient();
+        var notion = new RecordingNotionClient();
+        var formatter = new VoyageNotificationFormatter();
+        using var batcher = new DiscordNotificationBatcher(discord, formatter, log, TimeSpan.FromSeconds(60));
+        var routeCatalog = new RouteCatalog(null, log);
+        var coordinator = new NotificationCoordinator(discord, notion, formatter, routeCatalog, batcher, log);
+
+        var characterId = 0xCAFE_BABE_UL;
+        var baseArrival = DateTime.UtcNow;
+
+        for (byte slot = 0; slot < 4; slot++)
+        {
+            var underway = BuildEnvelope(characterId, slot, VoyageStatus.Underway, baseArrival, baseArrival.AddMinutes(slot), forceImmediate: true);
+            await coordinator.PublishVoyageCompletionAsync(underway);
+        }
+
+        Assert.Empty(discord.Singles);
+        var batch = Assert.Single(discord.Batches);
+        Assert.Equal(4, batch.Payload.Fields.Count);
+    }
+
     private static NotificationEnvelope BuildEnvelope(ulong characterId, byte slot, VoyageStatus status, DateTime departureUtc, DateTime arrivalUtc, bool forceImmediate)
     {
         var submarineId = new SubmarineId(characterId, slot);

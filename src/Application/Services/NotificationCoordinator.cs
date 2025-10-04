@@ -114,7 +114,7 @@ public sealed class NotificationCoordinator
         // ForceImmediate の経路を明示的にログ出力
         if (envelope.ForceImmediate)
         {
-            var route = decision.Aggregate is not null ? "Direct" : decision.IsSuppressed ? "Suppressed" : "Batched";
+            var route = decision.Aggregate is not null ? "Aggregated" : decision.IsSuppressed ? "Suppressed" : "Single";
             this.log.Log(LogLevel.Debug, $"[Notifications] ForceImmediate notification route: {route} for character={notification.CharacterLabel} status={notification.Status}");
         }
 
@@ -134,7 +134,7 @@ public sealed class NotificationCoordinator
         {
             if (envelope.ForceImmediate)
             {
-                this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate suppression retained to avoid duplicate Discord delivery.");
+                this.log.Log(LogLevel.Debug, "[Notifications] ForceImmediate suppression retained; awaiting full submarine set for aggregated delivery.");
             }
             return;
         }

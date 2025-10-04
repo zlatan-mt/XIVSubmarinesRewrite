@@ -62,8 +62,19 @@ public sealed class DiscordCycleNotificationAggregator
 
                 if (!state.CycleReady)
                 {
-                    this.log.Log(LogLevel.Trace, $"[Notifications] Discord aggregator cycle not ready, suppressing notification. cycleReady={state.CycleReady} completed={state.Completed.Count}");
-                    return Decision.Suppress();
+                    if (forceImmediate && state.Underway.Count >= CycleSize)
+                    {
+                        state.CycleReady = true;
+                        state.ForceImmediatePrimed = true;
+                        this.log.Log(LogLevel.Debug,
+                            "[Notifications] Discord aggregator primed cycle via ForceImmediate underway notifications (count reached 4).");
+                    }
+                    else
+                    {
+                        this.log.Log(LogLevel.Trace,
+                            $"[Notifications] Discord aggregator cycle not ready, suppressing notification. cycleReady={state.CycleReady} completed={state.Completed.Count}");
+                        return Decision.Suppress();
+                    }
                 }
 
                 if (!this.TryCreateAggregate(state, out var aggregateFromUnderway))
@@ -121,11 +132,14 @@ public sealed class DiscordCycleNotificationAggregator
 
         public bool CycleReady { get; set; }
 
+        public bool ForceImmediatePrimed { get; set; }
+
         public void Reset()
         {
             this.Completed.Clear();
             this.Underway.Clear();
             this.CycleReady = false;
+            this.ForceImmediatePrimed = false;
         }
     }
 
@@ -147,16 +161,21 @@ public sealed class DiscordCycleNotificationAggregator
         this.log.Log(LogLevel.Information,
             $"[Notifications] Discord aggregator flushing cycle reason={reason} character={aggregate[0].CharacterLabel} submarines={aggregate.Length} latestArrival={latestArrival:O}.");
         
-        // ForceImmediate の場合は状態をリセットしない（通常運用の CycleReady を維持）
-        if (!forceImmediate)
+        // ForceImmediate で強制的に cycle を整えた場合は送信後にリセットする
+        if (!forceImmediate || state.ForceImmediatePrimed)
         {
+            if (forceImmediate && state.ForceImmediatePrimed)
+            {
+                this.log.Log(LogLevel.Debug, "[Notifications] Discord aggregator resetting forced cycle after ForceImmediate delivery.");
+            }
+
             state.Reset();
         }
         else
         {
             this.log.Log(LogLevel.Debug, "[Notifications] Discord aggregator preserving cycle state for ForceImmediate.");
         }
-        
+
         return Decision.Aggregated(aggregate[0].CharacterLabel, payload, latestArrival);
     }
 }
