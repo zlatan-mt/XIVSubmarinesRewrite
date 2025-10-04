@@ -34,16 +34,24 @@ jobs:
           $vendorDir = "vendor\Dalamud"
           $requiredDlls = @("Dalamud.dll", "Dalamud.Bindings.ImGui.dll", "FFXIVClientStructs.dll", "InteropGenerator.Runtime.dll", "Lumina.dll", "Lumina.Excel.dll")
           
-          # Check if all required DLLs exist in vendor directory
-          $missing = @()
+          Write-Host "Checking vendor directory: $vendorDir" -ForegroundColor Cyan
           if (Test-Path $vendorDir) {
+            Write-Host "Vendor directory exists. Listing contents:" -ForegroundColor Green
+            Get-ChildItem $vendorDir -Name "*.dll" | ForEach-Object { Write-Host "  Found: $_" }
+            
+            # Check if all required DLLs exist in vendor directory
+            $missing = @()
             foreach ($dll in $requiredDlls) {
-              if (-not (Test-Path (Join-Path $vendorDir $dll))) {
+              $dllPath = Join-Path $vendorDir $dll
+              if (-not (Test-Path $dllPath)) {
                 $missing += $dll
+                Write-Host "  Missing: $dll" -ForegroundColor Yellow
+              } else {
+                Write-Host "  Present: $dll" -ForegroundColor Green
               }
             }
           } else {
-            Write-Host "Vendor directory not found, all DLLs are missing." -ForegroundColor Yellow
+            Write-Host "Vendor directory not found: $vendorDir" -ForegroundColor Red
             $missing = $requiredDlls
           }
           
@@ -62,8 +70,12 @@ jobs:
             # Final verification
             $finalMissing = @()
             foreach ($dll in $requiredDlls) {
-              if (-not (Test-Path (Join-Path $dalamudDir $dll))) {
+              $dllPath = Join-Path $dalamudDir $dll
+              if (-not (Test-Path $dllPath)) {
                 $finalMissing += $dll
+                Write-Host "Final check failed - Missing: $dll" -ForegroundColor Red
+              } else {
+                Write-Host "Final check passed - Present: $dll" -ForegroundColor Green
               }
             }
             if ($finalMissing.Count -gt 0) {
@@ -78,6 +90,7 @@ jobs:
           
           # Set environment variable for .csproj
           echo "DALAMUD_LIB_PATH=$dalamudDir" >> $env:GITHUB_ENV
+          Write-Host "Set DALAMUD_LIB_PATH=$dalamudDir" -ForegroundColor Green
       
       - name: Add custom NuGet sources
         run: |
