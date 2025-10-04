@@ -1,0 +1,55 @@
+# XIV Submarines Rewrite Release Configuration
+# GitHubリリースの自動化設定ファイル
+# リリースノートの生成とアセット管理を定義するため存在します
+# RELEVANT FILES: RELEASE_NOTES_v1.1.4.md, CHANGELOG.md, manifest.json
+
+name: XIV Submarines Rewrite Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      
+      - name: Create Release Package
+        run: |
+          mkdir release-package
+          copy "bin\Release\net9.0-windows\XIVSubmarinesRewrite.dll" "release-package\"
+          copy "manifest.json" "release-package\"
+          copy "plugin.json" "release-package\"
+          copy "icon.png" "release-package\"
+          copy "icon.128.png" "release-package\"
+          copy "CHANGELOG.md" "release-package\"
+          copy "README.md" "release-package\"
+          Compress-Archive -Path "release-package\*" -DestinationPath "XIVSubmarinesRewrite.zip"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: XIV Submarines Rewrite ${{ github.ref_name }}
+          body_path: RELEASE_NOTES_v1.1.4.md
+          files: XIVSubmarinesRewrite.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
