@@ -26,26 +26,45 @@ jobs:
       
       - name: Restore Dalamud DLLs
         run: |
-          # Create Dalamud directory in AppData
+          # Create Dalamud directory in AppData (this is where .csproj expects them)
           $dalamudDir = "$env:APPDATA\XIVLauncher\addon\Hooks\dev"
           New-Item -ItemType Directory -Path $dalamudDir -Force
           
           # Copy DLLs from vendor directory
           $vendorDir = "vendor\Dalamud"
           if (Test-Path $vendorDir) {
-            Write-Host "Copying Dalamud DLLs from vendor directory..."
+            Write-Host "Copying Dalamud DLLs from vendor directory to $dalamudDir..."
             Copy-Item "$vendorDir\*.dll" $dalamudDir -Force
             Get-ChildItem $dalamudDir -Name "*.dll" | ForEach-Object { Write-Host "Copied: $_" }
+            
+            # Verify all required DLLs are present
+            $requiredDlls = @("Dalamud.dll", "Dalamud.Bindings.ImGui.dll", "FFXIVClientStructs.dll", "InteropGenerator.Runtime.dll", "Lumina.dll", "Lumina.Excel.dll")
+            $missing = @()
+            foreach ($dll in $requiredDlls) {
+              if (-not (Test-Path (Join-Path $dalamudDir $dll))) {
+                $missing += $dll
+              }
+            }
+            if ($missing.Count -gt 0) {
+              Write-Host "Missing DLLs: $($missing -join ', ')" -ForegroundColor Red
+              exit 1
+            }
+            Write-Host "All required DLLs are present." -ForegroundColor Green
           } else {
             Write-Host "Vendor directory not found, running restore script..."
             .\tools\DalamudRestore\restore.ps1
           }
+          
+          # Set environment variable for .csproj
+          echo "DALAMUD_LIB_PATH=$dalamudDir" >> $env:GITHUB_ENV
       
       - name: Restore dependencies
         run: dotnet restore
       
       - name: Build
         run: dotnet build --configuration Release --no-restore
+        env:
+          DALAMUD_LIB_PATH: ${{ env.APPDATA }}\XIVLauncher\addon\Hooks\dev
       
       - name: Create Release Package
         run: |
