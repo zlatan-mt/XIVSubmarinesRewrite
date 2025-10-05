@@ -190,7 +190,7 @@ _No unreleased changes._
 - ✅ Phase10-B: キャラクタ保存条件の絞り込み
 
 ### Contributors
-- **MonaT**: 設計・実装・テスト・ドキュメント
+- **Zlatan.I**: 設計・実装・テスト・ドキュメント
 
 ### Acknowledgments
 - Dalamud Team: API と開発環境の提供
@@ -199,5 +199,5 @@ _No unreleased changes._
 
 ---
 
-[Unreleased]: https://github.com/mona-ty/XIVSubmarinesRewrite/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/mona-ty/XIVSubmarinesRewrite/releases/tag/v1.0.0
+[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.0.0

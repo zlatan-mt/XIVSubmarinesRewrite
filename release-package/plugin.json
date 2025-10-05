@@ -10,10 +10,10 @@
     "rewrite",
     "wip"
   ],
-  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
-  "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png",
+  "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
+  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png",
   "ImageUrls": [
-    "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png"
+    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
   ],
   "Changelog": "1.1.4: ForceNotify immediate batching now waits for all four submarines before sending.",
   "AssemblyVersion": "1.1.4"

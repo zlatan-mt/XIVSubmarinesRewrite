@@ -40,7 +40,7 @@ ForceNotifyUnderway の通知バッチング機能を改善し、より安定し
 
 ## サポート
 
-- **リポジトリ**: https://github.com/mona-ty/XIVSubmarinesRewrite
+- **リポジトリ**: https://github.com/zlatan-mt/XIVSubmarinesRewrite
 - **問題報告**: GitHub Issues をご利用ください
 
 ---

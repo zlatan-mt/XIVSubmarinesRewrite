@@ -24,7 +24,7 @@ Dalamud Plugin Installer から直接インストールできます。
 
 1. Dalamud の設定でカスタムリポジトリを追加：
    ```
-   https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/repo.json
+   https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/repo.json
    ```
 
 2. プラグインインストーラーで「XIV Submarines Rewrite」を検索してインストール

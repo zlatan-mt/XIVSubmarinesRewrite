@@ -1,13 +1,13 @@
 ﻿{
   "Name": "XIV Submarines Rewrite",
-  "Author": "TBD",
+  "Author": "Zlatan.I",
   "InternalName": "XIVSubmarinesRewrite",
   "Punchline": "Next-generation submarine workshop tools (WIP)",
   "Description": "Placeholder metadata for the rewrite project. Update as the new implementation takes shape.
 ",
-  "RepoUrl": "https://github.com/mona-ty/XIVSubmarinesRewrite",
-  "IconUrl": "https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png",
-  "ImageUrls": ["https://raw.githubusercontent.com/mona-ty/XIVSubmarinesRewrite/master/icon.png"],
+  "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
+  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png",
+  "ImageUrls": ["https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"],
   "AssemblyName": "XIVSubmarinesRewrite.dll",
   "AssemblyVersion": "1.1.4",
   "DalamudApiLevel": 13,
