@@ -18,37 +18,41 @@ public sealed class VoyageNotificationFormatter
 
     public DiscordNotificationPayload CreateDiscordPayload(VoyageNotification notification)
     {
-        var color = notification.Status switch
+        // Phase 13: Underway通知のみサポート（Completedは送信されない）
+        if (notification.Status != Domain.Models.VoyageStatus.Underway)
         {
-            Domain.Models.VoyageStatus.Completed => CompletedColor,
-            Domain.Models.VoyageStatus.Underway => UnderwayColor,
-            Domain.Models.VoyageStatus.Failed => "#E74C3C",
-            _ => "#95A5A6",
-        };
+            throw new ArgumentException(
+                $"Only Underway notifications are supported. Got: {notification.Status}. " +
+                "Completed notifications have been disabled in Phase 13.",
+                nameof(notification));
+        }
 
-        var description = notification.Status switch
-        {
-            Domain.Models.VoyageStatus.Completed => $"{notification.SubmarineLabel} が航海を完了しました。",
-            Domain.Models.VoyageStatus.Underway => $"{notification.SubmarineLabel} が航海を開始しました。次の帰港は {FormatLocalTimestamp(notification.ArrivalLocal)} です。",
-            _ => $"{notification.SubmarineLabel} の状態が更新されました。",
-        };
+        // タイトル: [潜水艦名] 出航
+        var title = $"{notification.SubmarineLabel} 出航";
 
-        var fields = BuildDiscordFields(notification);
+        // 説明: 航路名のみ
+        var description = notification.RouteDisplay ?? notification.RouteId ?? "航路不明";
 
-        var title = notification.Status switch
-        {
-            Domain.Models.VoyageStatus.Completed => $"{notification.SubmarineLabel} 帰港",
-            Domain.Models.VoyageStatus.Underway => $"{notification.SubmarineLabel} 出航",
-            Domain.Models.VoyageStatus.Failed => $"{notification.SubmarineLabel} 航海失敗",
-            _ => $"{notification.SubmarineLabel} 状態更新",
-        };
+        // 色: Underway用
+        var color = UnderwayColor;
+
+        // フィールド: 帰還予定のみ
+        var arrivalTime = FormatLocalTimestamp(notification.ArrivalLocal);
+        var remaining = FormatRemainingConcise(notification.Duration);
+        var arrivalField = new DiscordNotificationField(
+            "帰還予定",
+            $"{arrivalTime} ({remaining})",
+            false // inline
+        );
+
+        var fields = new List<DiscordNotificationField> { arrivalField };
 
         return new DiscordNotificationPayload(
             Title: title,
             Description: description,
             Color: color,
             Fields: fields,
-            Footer: string.Empty);
+            Footer: null);
     }
 
     public NotionNotificationPayload CreateNotionPayload(VoyageNotification notification)
@@ -85,43 +89,45 @@ public sealed class VoyageNotificationFormatter
             throw new ArgumentException("At least one notification is required for batch payloads.", nameof(notifications));
         }
 
-        var description = status switch
+        // Phase 13: Underway通知のみサポート
+        if (status != Domain.Models.VoyageStatus.Underway)
         {
-            Domain.Models.VoyageStatus.Completed => $"{characterLabel} の潜水艦 {notifications.Count} 隻が帰港しました。",
-            Domain.Models.VoyageStatus.Underway => $"{characterLabel} の潜水艦 {notifications.Count} 隻が出航しました。次の帰港予定を確認してください。",
-            Domain.Models.VoyageStatus.Failed => $"{characterLabel} の潜水艦 {notifications.Count} 隻で異常が発生しました。",
-            _ => $"{characterLabel} の潜水艦 {notifications.Count} 隻の状態が更新されました。",
-        };
-        var fields = new List<DiscordNotificationField>(notifications.Count);
-
-        foreach (var notification in notifications)
-        {
-            var parts = BuildBatchLines(status, notification);
-            fields.Add(new DiscordNotificationField(notification.SubmarineLabel, string.Join("\n", parts), false));
+            throw new ArgumentException(
+                $"Only Underway batch notifications are supported. Got: {status}. " +
+                "Completed notifications have been disabled in Phase 13.",
+                nameof(status));
         }
 
-        var color = status switch
-        {
-            Domain.Models.VoyageStatus.Completed => CompletedColor,
-            Domain.Models.VoyageStatus.Underway => UnderwayColor,
-            Domain.Models.VoyageStatus.Failed => "#E74C3C",
-            _ => "#95A5A6",
-        };
+        // タイトル: [キャラクター名] - [N]隻出航
+        var title = $"{characterLabel} - {notifications.Count}隻出航";
 
-        var title = status switch
+        // 説明: シンプルに（空欄でもOK）
+        var description = string.Empty;
+
+        // 色: Underway用
+        var color = UnderwayColor;
+
+        // 各潜水艦を1行で表示: "潜水艦名: 日時 (残り時間)"
+        var fields = new List<DiscordNotificationField>(notifications.Count);
+        foreach (var notification in notifications)
         {
-            Domain.Models.VoyageStatus.Completed => $"{notifications.Count} 隻が帰港",
-            Domain.Models.VoyageStatus.Underway => $"{notifications.Count} 隻が出航",
-            Domain.Models.VoyageStatus.Failed => $"{notifications.Count} 隻でエラー",
-            _ => $"{notifications.Count} 隻の状態更新",
-        };
+            var arrivalTime = FormatLocalTimestamp(notification.ArrivalLocal);
+            var remaining = FormatRemainingConcise(notification.Duration);
+            var value = $"{arrivalTime} ({remaining})";
+            
+            fields.Add(new DiscordNotificationField(
+                notification.SubmarineLabel,
+                value,
+                true // inline = true で横並び可能に
+            ));
+        }
 
         return new DiscordNotificationPayload(
             Title: title,
             Description: description,
             Color: color,
             Fields: fields,
-            Footer: string.Empty);
+            Footer: null);
     }
 
     private static List<DiscordNotificationField> BuildDiscordFields(VoyageNotification notification)
@@ -237,6 +243,48 @@ public sealed class VoyageNotificationFormatter
         }
 
         return FormatDuration(remaining);
+    }
+
+    /// <summary>
+    /// 残り時間を簡潔にフォーマット（12h, 30m, 12.5h）
+    /// Phase 13: Discord通知最適化用
+    /// </summary>
+    /// <param name="duration">残り時間</param>
+    /// <returns>簡潔な時間表記（例: "12h", "30m", "12.5h"）</returns>
+    private static string FormatRemainingConcise(TimeSpan? duration)
+    {
+        if (duration is null || duration.Value <= TimeSpan.Zero)
+        {
+            return "0m";
+        }
+
+        var span = duration.Value;
+
+        // 異常値チェック（14日超過）
+        if (span > TimeSpan.FromDays(14))
+        {
+            return "14d+";
+        }
+
+        // 1時間未満: 分単位
+        if (span.TotalHours < 1)
+        {
+            var minutes = (int)Math.Ceiling(span.TotalMinutes);
+            return $"{minutes}m";
+        }
+
+        // 1時間以上: 時間単位（0.5刻みで丸める）
+        var hours = span.TotalHours;
+        var roundedHours = Math.Round(hours * 2) / 2; // 0.5刻み
+
+        // 整数時間の場合
+        if (Math.Abs(roundedHours - Math.Floor(roundedHours)) < 0.01)
+        {
+            return $"{(int)roundedHours}h";
+        }
+
+        // 小数点表示（.5のみ）
+        return $"{roundedHours:F1}h";
     }
 
     // Notion 側で空欄になるのを避けるため、表示用の航路文字列を整えます。
