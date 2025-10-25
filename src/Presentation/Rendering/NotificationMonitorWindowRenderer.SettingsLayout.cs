@@ -30,25 +30,17 @@ public sealed partial class NotificationMonitorWindowRenderer
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.TextColored(UiTheme.MutedText, "航海完了の通知 / 出港直後の通知");
+            ImGui.TextColored(UiTheme.MutedText, "出港直後の通知");
             ImGui.TableNextColumn();
-            var notifyCompleted = this.editingSettings.NotifyVoyageCompleted;
             var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
-            var columnWidth = ImGui.GetContentRegionAvail().X;
-            var halfWidth = MathF.Max(0f, columnWidth * 0.5f - ImGui.GetStyle().ItemInnerSpacing.X);
-            ImGui.SetNextItemWidth(halfWidth);
-            if (ImGui.Checkbox("航海完了を通知", ref notifyCompleted))
-            {
-                this.editingSettings.NotifyVoyageCompleted = notifyCompleted;
-                changed = true;
-            }
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(-1f);
             if (ImGui.Checkbox("出港直後を通知", ref notifyUnderway))
             {
                 this.editingSettings.NotifyVoyageUnderway = notifyUnderway;
                 changed = true;
             }
+            
+            // Note: 航海完了通知は Phase 13 で廃止されました
+            // 出航時の帰還予定通知のみを送信します
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();

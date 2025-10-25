@@ -149,7 +149,7 @@ public sealed partial class NotificationMonitorWindowRenderer
         this.settings.NotionWebhookUrl = this.editingSettings.NotionWebhookUrl;
         this.settings.DeadLetterRetentionLimit = this.editingSettings.DeadLetterRetentionLimit;
         this.settings.ForceNotifyUnderway = this.editingSettings.ForceNotifyUnderway;
-        this.settings.NotifyVoyageCompleted = this.editingSettings.NotifyVoyageCompleted;
+        // Note: NotifyVoyageCompleted は Phase 13 で廃止（設定から削除）
         this.settings.NotifyVoyageUnderway = this.editingSettings.NotifyVoyageUnderway;
         this.settings.DiscordBatchWindowSeconds = Math.Clamp(this.editingSettings.DiscordBatchWindowSeconds, 0.5, 15.0);
 
