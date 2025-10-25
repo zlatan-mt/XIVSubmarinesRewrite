@@ -69,6 +69,56 @@ public sealed partial class NotificationMonitorWindowRenderer
                 changed = true;
             }
 
+            // Phase 13: Discord Reminder Bot 統合（Task 3.4）
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextColored(UiTheme.MutedText, "リマインダー連携");
+            ImGui.TableNextColumn();
+            var enableReminder = this.editingSettings.EnableReminderCommand;
+            if (ImGui.Checkbox("リマインダーコマンドを含める", ref enableReminder))
+            {
+                this.editingSettings.EnableReminderCommand = enableReminder;
+                changed = true;
+            }
+
+            if (this.editingSettings.EnableReminderCommand)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Indent();
+                ImGui.TextWrapped(
+                    "通知にDiscord Reminder Botのコマンドを追加します。" +
+                    "コマンドをコピペして実行すると、帰還時刻にリマインダーが送信されます。");
+                
+                ImGui.Spacing();
+                ImGui.Text("チャンネル名:");
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(200f);
+                
+                // ReminderChannelName用の入力
+                var channelName = this.editingSettings.ReminderChannelName ?? "#submarine";
+                var buffer = new byte[256];
+                var bytes = System.Text.Encoding.UTF8.GetBytes(channelName);
+                Array.Copy(bytes, buffer, Math.Min(bytes.Length, buffer.Length - 1));
+                
+                if (ImGui.InputText("##reminderChannel", buffer, ImGuiInputTextFlags.None))
+                {
+                    var text = System.Text.Encoding.UTF8.GetString(buffer);
+                    var nullIndex = text.IndexOf('\0');
+                    if (nullIndex >= 0)
+                    {
+                        text = text[..nullIndex];
+                    }
+                    this.editingSettings.ReminderChannelName = text.Trim();
+                    changed = true;
+                }
+                
+                ImGui.SameLine();
+                ImGui.TextColored(UiTheme.MutedText, "例: #submarine");
+                ImGui.Unindent();
+            }
+
             ImGui.EndTable();
         }
 

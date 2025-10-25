@@ -142,7 +142,7 @@ public sealed class PluginBootstrapper : IDisposable
         this.Services.RegisterSingleton<IMainThreadDispatcher>(mainThreadDispatcher);
         this.Services.RegisterSingleton(mainThreadDispatcher);
 
-        var notificationFormatter = new VoyageNotificationFormatter();
+        var notificationFormatter = new VoyageNotificationFormatter(notificationSettings);
         this.Services.RegisterSingleton(notificationFormatter);
 
         var initialBatchWindow = TimeSpan.FromSeconds(Math.Clamp(notificationSettings.DiscordBatchWindowSeconds, 0.5, 15.0));

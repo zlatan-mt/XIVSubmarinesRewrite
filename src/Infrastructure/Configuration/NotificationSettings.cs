@@ -31,5 +31,17 @@ public sealed class NotificationSettings
 
     public bool NotifyVoyageUnderway { get; set; } = true;
 
+    /// <summary>
+    /// Discord Reminder Bot のコマンドを通知に含めるかどうか
+    /// Phase 13: リマインダー連携機能
+    /// </summary>
+    public bool EnableReminderCommand { get; set; } = false;
+
+    /// <summary>
+    /// リマインダーを送信するDiscordチャンネル名（#付き）
+    /// Phase 13: リマインダー連携機能
+    /// </summary>
+    public string ReminderChannelName { get; set; } = "#submarine";
+
     public NotificationSettings Clone() => (NotificationSettings)this.MemberwiseClone();
 }

@@ -9,12 +9,20 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using XIVSubmarinesRewrite.Infrastructure.Configuration;
 
 /// <summary>Builds channel-specific payloads from voyage notifications.</summary>
 public sealed class VoyageNotificationFormatter
 {
     private const string CompletedColor = "#1ABC9C";
     private const string UnderwayColor = "#3498DB";
+
+    private readonly NotificationSettings settings;
+
+    public VoyageNotificationFormatter(NotificationSettings settings)
+    {
+        this.settings = settings;
+    }
 
     public DiscordNotificationPayload CreateDiscordPayload(VoyageNotification notification)
     {
@@ -46,6 +54,22 @@ public sealed class VoyageNotificationFormatter
         );
 
         var fields = new List<DiscordNotificationField> { arrivalField };
+
+        // オプション: リマインダーコマンド（Task 3.2）
+        if (this.settings.EnableReminderCommand)
+        {
+            var reminderCommand = FormatReminderCommand(
+                this.settings.ReminderChannelName,
+                notification.ArrivalLocal,
+                $"{notification.SubmarineLabel}が帰還"
+            );
+            var reminderField = new DiscordNotificationField(
+                "リマインダー設定",
+                $"`{reminderCommand}`",
+                false
+            );
+            fields.Add(reminderField);
+        }
 
         return new DiscordNotificationPayload(
             Title: title,
@@ -120,6 +144,24 @@ public sealed class VoyageNotificationFormatter
                 value,
                 true // inline = true で横並び可能に
             ));
+        }
+
+        // オプション: バッチリマインダーコマンド（Task 3.3）
+        if (this.settings.EnableReminderCommand && notifications.Count > 0)
+        {
+            // 最も早い帰還時刻を使用
+            var firstArrival = notifications.Min(n => n.ArrivalLocal);
+            var reminderCommand = FormatReminderCommand(
+                this.settings.ReminderChannelName,
+                firstArrival,
+                $"{notifications.Count}隻帰還開始"
+            );
+            var reminderField = new DiscordNotificationField(
+                "リマインダー一括設定",
+                $"`{reminderCommand}`",
+                false
+            );
+            fields.Add(reminderField);
         }
 
         return new DiscordNotificationPayload(
@@ -285,6 +327,89 @@ public sealed class VoyageNotificationFormatter
 
         // 小数点表示（.5のみ）
         return $"{roundedHours:F1}h";
+    }
+
+    /// <summary>
+    /// Discord Reminder Bot用のコマンド文字列を生成
+    /// Phase 13: Discord Reminder Bot統合
+    /// </summary>
+    /// <param name="channelName">リマインダーを送信するチャンネル名（#付き推奨）</param>
+    /// <param name="arrivalTime">帰還時刻（ローカル時刻）</param>
+    /// <param name="message">リマインダーメッセージ</param>
+    /// <returns>Discord Reminder Botのコマンド文字列</returns>
+    private static string FormatReminderCommand(string channelName, DateTime arrivalTime, string message)
+    {
+        // チャンネル名のバリデーション
+        var sanitizedChannel = SanitizeChannelName(channelName);
+
+        // Reminder Botの時刻フォーマット: "M/d HH:mm" 形式
+        // 例: "10/26 14:30"
+        var timeStr = arrivalTime.ToString("M/d HH:mm", CultureInfo.InvariantCulture);
+
+        // メッセージをサニタイズ
+        var sanitizedMessage = SanitizeReminderMessage(message);
+
+        return $"/remind {sanitizedChannel} {timeStr} {sanitizedMessage}";
+    }
+
+    /// <summary>
+    /// チャンネル名をサニタイズ（#プレフィックス確認、危険文字削除）
+    /// </summary>
+    private static string SanitizeChannelName(string channelName)
+    {
+        if (string.IsNullOrWhiteSpace(channelName))
+        {
+            return "#submarine"; // デフォルト
+        }
+
+        var trimmed = channelName.Trim();
+
+        // #プレフィックスがない場合は追加
+        if (!trimmed.StartsWith("#"))
+        {
+            trimmed = "#" + trimmed;
+        }
+
+        // 英数字、ハイフン、アンダースコア、#のみ許可
+        var sanitized = new string(trimmed
+            .Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '#')
+            .ToArray());
+
+        // 有効なチャンネル名でない場合はデフォルト
+        if (string.IsNullOrEmpty(sanitized) || sanitized == "#")
+        {
+            return "#submarine";
+        }
+
+        return sanitized;
+    }
+
+    /// <summary>
+    /// リマインダーメッセージをサニタイズ（改行削除、長さ制限）
+    /// </summary>
+    private static string SanitizeReminderMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return "帰還";
+        }
+
+        // 改行を空白に変換
+        var sanitized = message.Replace("\n", " ").Replace("\r", " ");
+
+        // 連続する空白を1つに
+        while (sanitized.Contains("  "))
+        {
+            sanitized = sanitized.Replace("  ", " ");
+        }
+
+        // 最大100文字に制限
+        if (sanitized.Length > 100)
+        {
+            sanitized = sanitized.Substring(0, 97) + "...";
+        }
+
+        return sanitized.Trim();
     }
 
     // Notion 側で空欄になるのを避けるため、表示用の航路文字列を整えます。
