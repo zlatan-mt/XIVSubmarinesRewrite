@@ -1,0 +1,27 @@
+{
+  "spec_id": "discord-message-optimization",
+  "title": "Discord通知メッセージの最適化",
+  "description": "現在のDiscord通知は冗長すぎるため、必要最小限の情報に絞り込み、可読性とユーザー体験を向上させる",
+  "created_at": "2025-10-26T08:35:00Z",
+  "status": "initialized",
+  "category": "improvement",
+  "priority": "medium",
+  "estimated_effort": "small",
+  "phase": "phase13-candidate",
+  "initial_notes": [
+    "現状の問題: 単体通知で6個のフィールド、バッチ通知で3行×4隻=12行の情報量",
+    "ユーザーのニーズ: 一目で状況を把握できる簡潔な通知",
+    "最適化方針: 重要な情報のみを表示、詳細は必要時のみ",
+    "影響範囲: VoyageNotificationFormatter.cs（単体・バッチ両方）"
+  ],
+  "stakeholders": [
+    "プレイヤー（通知受信者）",
+    "開発者（保守性）"
+  ],
+  "next_steps": [
+    "spec-requirements: 最適化の具体的な要件を定義",
+    "現状分析: 各フィールドの必要性を評価",
+    "ユーザビリティ設計: 最小限の情報で最大の価値を提供"
+  ]
+}
+
