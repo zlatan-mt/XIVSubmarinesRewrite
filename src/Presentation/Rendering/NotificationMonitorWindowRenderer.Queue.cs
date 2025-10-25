@@ -129,7 +129,7 @@ public sealed partial class NotificationMonitorWindowRenderer
                 }
 
                 ImGui.TableSetColumnIndex(4);
-                if (ImGui.SmallButton("再送"))
+                if (DrawRetryButtonWithTooltip(item))
                 {
                     this.queueViewModel.TryRequeue(item.Envelope.HashKey);
                 }
