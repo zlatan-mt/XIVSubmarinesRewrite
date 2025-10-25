@@ -8,7 +8,13 @@ name: Verify
 on:
   push:
     branches:
-      - '**'
+      - develop
+      - release
+      - 'feature/**'
+  pull_request:
+    branches:
+      - develop
+      - release
   workflow_dispatch:
     inputs:
       grep:
