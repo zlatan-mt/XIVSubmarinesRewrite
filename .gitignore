@@ -28,9 +28,3 @@ tools/**/obj/
 Local.props
 Local.props.example
 icon.original.png
-
-# Development directories (moved to dev branch)
-docs/
-plans/
-sessions/
-.serena/
