@@ -89,7 +89,10 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
                 var status = DetermineStatus(arrival);
 
                 var routeId = ExtractRouteIdentifier((byte*)vesselPtr + ExplorationPointsOffset);
-                var submarineId = new SubmarineId(characterId, (byte)(i + 1));
+                // Slot番号の正規化: メモリソースでは0-4のインデックスを使用するが、実際のSlotは0-3の範囲に正規化
+                // FFXIVの潜水艦スロットは0-3（4隻）なので、i+1ではなくiを使用（ただし、iは0-4の範囲）
+                var slot = (byte)Math.Min(i, 3); // 0-3の範囲に制限
+                var submarineId = new SubmarineId(characterId, slot);
                 var voyageGuid = ComputeVoyageId(name, registerSeconds, returnSeconds);
                 var voyageId = VoyageId.Create(submarineId, voyageGuid);
                 var voyage = new Voyage(voyageId, routeId ?? string.Empty, departure, arrival, status);

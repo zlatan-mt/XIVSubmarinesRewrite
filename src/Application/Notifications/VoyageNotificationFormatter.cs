@@ -125,26 +125,38 @@ public sealed class VoyageNotificationFormatter
         // タイトル: [キャラクター名] - [N]隻出航
         var title = $"{characterLabel} - {notifications.Count}隻出航";
 
-        // 説明: シンプルに（空欄でもOK）
-        var description = string.Empty;
-
         // 色: Underway用
         var color = UnderwayColor;
 
-        // 各潜水艦を1行で表示: "潜水艦名: 日時 (残り時間)"
-        var fields = new List<DiscordNotificationField>(notifications.Count);
-        foreach (var notification in notifications)
+        // 最も遅く帰還する潜水艦を特定（メイン表示用）
+        var sortedNotifications = notifications.OrderBy(n => n.ArrivalUtc).ToList();
+        var latestNotification = sortedNotifications[^1]; // 最後（最も遅い）
+
+        // 説明: 最も遅い帰還時刻のみを表示
+        // 太字で強調し、視覚的に目立たせる（Discordのembed descriptionでは色の直接指定は不可）
+        var latestArrivalTime = FormatLocalTimestamp(latestNotification.ArrivalLocal);
+        var description = $"**🟠 帰還時間: {latestArrivalTime}**";
+
+        // 各潜水艦を1行ずつ縦に並べて表示
+        // フォーマット: "潜水艦名 帰還時間(曜日)"
+        // 潜水艦名の長さを統一して、帰還日時を揃える
+        // Discordのコードブロックを使用して等幅フォントで表示し、確実に整列させる
+        var maxLabelLength = sortedNotifications.Max(n => n.SubmarineLabel?.Length ?? 0);
+        var submarineLines = sortedNotifications.Select(n =>
         {
-            var arrivalTime = FormatLocalTimestamp(notification.ArrivalLocal);
-            var remaining = FormatRemainingConcise(notification.Duration);
-            var value = $"{arrivalTime} ({remaining})";
-            
-            fields.Add(new DiscordNotificationField(
-                notification.SubmarineLabel,
-                value,
-                true // inline = true で横並び可能に
-            ));
-        }
+            var arrivalTime = FormatLocalTimestamp(n.ArrivalLocal);
+            // 潜水艦名を固定幅にパディング（半角スペースで揃える）
+            // コードブロック内では等幅フォントが使われるため、半角スペースで十分
+            var paddedLabel = (n.SubmarineLabel ?? string.Empty).PadRight(maxLabelLength, ' '); // 半角スペース
+            return $"{paddedLabel} {arrivalTime}";
+        });
+
+        // 説明フィールドに全情報を追加（縦並び表示）
+        // Discordのコードブロックで囲むことで、等幅フォントで表示し、アライメントを保証
+        description = $"{description}\n\n```\n{string.Join("\n", submarineLines)}\n```";
+
+        // フィールドは使用しない（説明フィールドに全情報を表示）
+        var fields = new List<DiscordNotificationField>();
 
         // オプション: バッチリマインダーコマンド（Task 3.3）
         if (this.settings.EnableReminderCommand && notifications.Count > 0)
