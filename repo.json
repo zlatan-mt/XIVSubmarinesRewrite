@@ -4,7 +4,7 @@
     "Name": "XIV Submarines Rewrite",
     "Description": "Polished single-window UI with Playwright coverage helpers and release-ready metadata.",
     "InternalName": "XIVSubmarinesRewrite",
-    "AssemblyVersion": "1.1.4",
+    "AssemblyVersion": "1.1.6",
     "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 13,
@@ -13,12 +13,12 @@
     "ImageUrls": [
       "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/release/icon.png"
     ],
-    "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.1.4/XIVSubmarinesRewrite.zip",
-    "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.1.4/XIVSubmarinesRewrite.zip",
-    "LastUpdate": 1759582972,
+    "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.1.6/XIVSubmarinesRewrite.zip",
+    "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.1.6/XIVSubmarinesRewrite.zip",
+    "LastUpdate": 1762475356,
     "_comment_path": "apps/XIVSubmarinesRewrite/repo.json",
     "_comment_summary": "Dalamud 用配布リスト定義ファイル",
     "_comment_reason": "Dalamud のプラグインリストから最新版を参照させるため",
-    "_comment_related": "manifest.json, plugin.json, RELEASE_NOTES_v1.1.4.md"
+    "_comment_related": "manifest.json, plugin.json, RELEASE_NOTES_v1.1.6.md"
   }
 ]

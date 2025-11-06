@@ -1,13 +1,13 @@
 {
   "Name": "XIV Submarines Rewrite",
   "InternalName": "XIVSubmarinesRewrite",
-  "Author": "TBD",
+  "Author": "Zlatan.I",
   "Punchline": "Next-generation submarine workshop tools (WIP)",
   "Description": "Polished single-window UI with Playwright coverage helpers and release-ready metadata.",
   "ApplicableVersion": "any",
   "DalamudApiLevel": 13,
   "AssemblyName": "XIVSubmarinesRewrite.dll",
-  "AssemblyVersion": "1.1.4",
+  "AssemblyVersion": "1.1.6",
   "Tags": [
     "rewrite",
     "wip"

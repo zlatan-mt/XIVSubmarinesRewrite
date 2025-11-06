@@ -14,6 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.1.6] - 2025-01-27
+
+### Changed
+
+- **Discord通知レイアウトの改善**：最も遅い帰還時刻を大きく表示し、全潜水艦の帰還時刻を整列表示するように改善しました。
+- **通知表示の最適化**：コードブロックを使用して等幅フォントで表示し、潜水艦名の長さに関わらず帰還時刻が縦に揃うようにしました。
+
+### Fixed
+
+- **重複潜水艦問題の修正**：3隻目と4隻目が同じ内容で表示される問題を修正しました。
+  - Slot番号の正規化（0-3の範囲に制限）
+  - 重複検出ロジックの追加と警告ログの出力
+  - 詳細なデバッグログの追加（SubmarineId、Slot、HashKeyを記録）
+
+### Added
+
+- **デバッグ機能の強化**：Discord通知集約処理に詳細なログを追加し、問題の原因特定を容易にしました。
+
 ## [1.1.5] - 2025-10-25
 
 ### Changed
@@ -226,5 +244,7 @@ _No unreleased changes._
 
 ---
 
-[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.1.6...HEAD
+[1.1.6]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.1.6
+[1.1.5]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.1.5
 [1.0.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.0.0
