@@ -1,10 +1,12 @@
 // Phase 13: Discord notification optimization E2E tests
 // Verifies UI changes and notification format optimization
+// NOTE: These tests require actual Dalamud plugin UI and cannot run in CI.
+// They are skipped and should be run manually in a Dalamud environment.
 
 import { test, expect } from '@playwright/test';
 import { MainWindowHarness } from './fixtures/main-window-fixture';
 
-test.describe('@notification @phase13 Discord notification optimization', () => {
+test.describe.skip('@notification @phase13 Discord notification optimization', () => {
   
   test('completed notification checkbox is removed from UI', async ({ page }) => {
     const fixture = new MainWindowHarness(page);
