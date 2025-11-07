@@ -1,5 +1,5 @@
 {
-  "Author": "TBD",
+  "Author": "Zlatan.I",
   "Name": "XIV Submarines Rewrite",
   "InternalName": "XIVSubmarinesRewrite",
   "Punchline": "Next-generation submarine workshop tools (WIP)",
@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
   ],
-  "Changelog": "1.1.4: ForceNotify immediate batching now waits for all four submarines before sending.",
-  "AssemblyVersion": "1.1.4"
+  "Changelog": "1.1.6: Improved Discord notification layout with aligned return times and fixed duplicate submarine issue.",
+  "AssemblyVersion": "1.1.6"
 }

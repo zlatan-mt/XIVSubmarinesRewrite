@@ -57,8 +57,15 @@ public sealed class DiscordCycleNotificationAggregator
                 return Decision.Suppress();
 
             case VoyageStatus.Underway:
+                // デバッグログ: SubmarineId、Slot、HashKeyを記録
+                var existingNotification = state.Underway.TryGetValue(notification.SubmarineId, out var existing) ? existing : null;
                 state.Underway[notification.SubmarineId] = notification;
-                this.log.Log(LogLevel.Trace, $"[Notifications] Discord aggregator recorded underway submarine={notification.SubmarineLabel} count={state.Underway.Count}.");
+                this.log.Log(LogLevel.Debug, 
+                    $"[Notifications] Discord aggregator recorded underway: SubmarineId={notification.SubmarineId} " +
+                    $"Slot={notification.SubmarineId.Slot} Label={notification.SubmarineLabel} " +
+                    $"HashKey={notification.HashKey} ArrivalUtc={notification.ArrivalUtc:O} " +
+                    $"count={state.Underway.Count}" +
+                    (existingNotification != null ? $" (replaced existing: HashKey={existingNotification.HashKey})" : ""));
 
                 if (!state.CycleReady)
                 {
@@ -151,15 +158,60 @@ public sealed class DiscordCycleNotificationAggregator
             .OrderBy(n => n.ArrivalUtc)
             .ToArray();
 
+        // 重複検出ロジック: 同じSubmarineIdが複数ある場合を検出
+        var duplicateGroups = aggregate
+            .GroupBy(n => n.SubmarineId)
+            .Where(g => g.Count() > 1)
+            .ToList();
+        
+        if (duplicateGroups.Any())
+        {
+            foreach (var group in duplicateGroups)
+            {
+                this.log.Log(LogLevel.Warning,
+                    $"[Notifications] Duplicate SubmarineId detected in aggregate: SubmarineId={group.Key} " +
+                    $"Slot={group.Key.Slot} Count={group.Count()} " +
+                    $"HashKeys=[{string.Join(", ", group.Select(n => n.HashKey))}]");
+            }
+        }
+
+        // Slot番号の検証: 0-3の範囲に正規化されているか確認
+        var invalidSlots = aggregate.Where(n => n.SubmarineId.Slot >= 4 && !n.SubmarineId.IsPending).ToList();
+        if (invalidSlots.Any())
+        {
+            this.log.Log(LogLevel.Warning,
+                $"[Notifications] Invalid Slot numbers detected in aggregate: " +
+                string.Join(", ", invalidSlots.Select(n => $"SubmarineId={n.SubmarineId} Slot={n.SubmarineId.Slot}")));
+        }
+
+        // 集約結果の詳細ログ
+        if (aggregate.Length > 0)
+        {
+            var slotSummary = string.Join(", ", aggregate.Select(n => $"Slot{n.SubmarineId.Slot}:{n.SubmarineLabel}"));
+            this.log.Log(LogLevel.Debug,
+                $"[Notifications] Discord aggregator created aggregate: count={aggregate.Length} slots=[{slotSummary}]");
+        }
+
         return state.CycleReady && aggregate.Length >= CycleSize;
     }
 
     private Decision BuildAggregateDecision(CycleState state, VoyageNotification[] aggregate, string reason, bool forceImmediate = false)
     {
+        // 集約結果の詳細ログ（重複チェック）
+        var uniqueSubmarineIds = aggregate.Select(n => n.SubmarineId).Distinct().Count();
+        if (uniqueSubmarineIds < aggregate.Length)
+        {
+            this.log.Log(LogLevel.Warning,
+                $"[Notifications] Discord aggregator detected duplicate SubmarineIds in final aggregate: " +
+                $"total={aggregate.Length} unique={uniqueSubmarineIds} " +
+                $"SubmarineIds=[{string.Join(", ", aggregate.Select(n => $"{n.SubmarineId}(Slot{n.SubmarineId.Slot})"))}]");
+        }
+
         var payload = this.formatter.CreateDiscordBatchPayload(VoyageStatus.Underway, aggregate[0].CharacterLabel, aggregate);
         var latestArrival = aggregate[^1].ArrivalUtc;
         this.log.Log(LogLevel.Information,
-            $"[Notifications] Discord aggregator flushing cycle reason={reason} character={aggregate[0].CharacterLabel} submarines={aggregate.Length} latestArrival={latestArrival:O}.");
+            $"[Notifications] Discord aggregator flushing cycle reason={reason} character={aggregate[0].CharacterLabel} " +
+            $"submarines={aggregate.Length} uniqueSubmarineIds={uniqueSubmarineIds} latestArrival={latestArrival:O}.");
         
         // ForceImmediate で強制的に cycle を整えた場合は送信後にリセットする
         if (!forceImmediate || state.ForceImmediatePrimed)

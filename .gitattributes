@@ -3,13 +3,12 @@
 # REASON: Optimize release ZIP contents and ensure consistent line endings
 # RELEVANT FILES: XIVSubmarinesRewrite.csproj, .github/workflows/verify.yml
 
-# Export ignore - exclude from release ZIP
-tests/ export-ignore
+# Export ignore - exclude from release ZIP (development files only)
+# Note: release branch already has development directories removed
 .github/ export-ignore
-tools/ export-ignore
-vendor/ export-ignore
-plans/ export-ignore
-*.md export-ignore
+tests/Playwright/ export-ignore
+Local.props.example export-ignore
+RELEASE_NOTES_*.md export-ignore
 
 # Line ending control
 *.cs text eol=crlf

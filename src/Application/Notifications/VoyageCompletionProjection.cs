@@ -127,29 +127,29 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var submarineId = voyage.Id.SubmarineId;
         var arrivalUtc = voyage.Arrival!.Value.ToUniversalTime();
 
+        // Completed通知は送信しない（Phase 13: Discord通知最適化）
+        // 理由: ユーザーは出航時の帰還予定通知のみを必要とする
+        this.log.Log(LogLevel.Debug, 
+            $"[Notifications] Completed voyage {voyageId} detected but notifications are disabled " +
+            $"(arrival={voyage.Arrival}). Completed notifications are no longer sent as of Phase 13.");
+
+        // ForceNotifyステートのクリーンアップは維持
+        this.forceNotifyStates.Remove(submarineId);
+
+        // 重複検出用の最終到着時刻記録は維持（将来の機能拡張用）
         if (priorVoyage is not null && priorVoyage.Status == VoyageStatus.Completed && priorVoyage.Arrival.HasValue)
         {
             var priorArrivalUtc = priorVoyage.Arrival.Value.ToUniversalTime();
             if (AreArrivalsClose(arrivalUtc, priorArrivalUtc))
             {
-                this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} already handled (arrival={voyage.Arrival}).");
+                this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} already processed.");
                 return;
             }
         }
 
-        this.forceNotifyStates.Remove(submarineId);
         if (this.lastCompletedArrivals.TryGetValue(submarineId, out var recordedArrivalUtc))
         {
-            if (AreArrivalsClose(arrivalUtc, recordedArrivalUtc))
-            {
-                if (arrivalUtc < recordedArrivalUtc)
-                {
-                    this.lastCompletedArrivals[submarineId] = arrivalUtc;
-                }
-
-                this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} arrival within tolerance ({CompletedArrivalDuplicateTolerance.TotalSeconds:F0}s); refreshing buffer.");
-            }
-            else
+            if (!AreArrivalsClose(arrivalUtc, recordedArrivalUtc))
             {
                 this.lastCompletedArrivals[submarineId] = arrivalUtc;
             }
@@ -159,13 +159,8 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
             this.lastCompletedArrivals[submarineId] = arrivalUtc;
         }
 
-        if (!this.notificationSettings.NotifyVoyageCompleted)
-        {
-            this.log.Log(LogLevel.Trace, $"[Notifications] Completed voyage {voyageId} suppressed; NotifyVoyageCompleted=false arrival={voyage.Arrival}.");
-            return;
-        }
-
-        this.BufferNotification(snapshot, voyage);
+        // 通知は送信しない（早期return）
+        return;
     }
 
     private void HandleForceNotify(AcquisitionSnapshot snapshot, Voyage voyage)

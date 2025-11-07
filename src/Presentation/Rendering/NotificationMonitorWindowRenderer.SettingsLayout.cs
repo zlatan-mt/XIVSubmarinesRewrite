@@ -30,25 +30,17 @@ public sealed partial class NotificationMonitorWindowRenderer
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.TextColored(UiTheme.MutedText, "航海完了の通知 / 出港直後の通知");
+            ImGui.TextColored(UiTheme.MutedText, "出港直後の通知");
             ImGui.TableNextColumn();
-            var notifyCompleted = this.editingSettings.NotifyVoyageCompleted;
             var notifyUnderway = this.editingSettings.NotifyVoyageUnderway;
-            var columnWidth = ImGui.GetContentRegionAvail().X;
-            var halfWidth = MathF.Max(0f, columnWidth * 0.5f - ImGui.GetStyle().ItemInnerSpacing.X);
-            ImGui.SetNextItemWidth(halfWidth);
-            if (ImGui.Checkbox("航海完了を通知", ref notifyCompleted))
-            {
-                this.editingSettings.NotifyVoyageCompleted = notifyCompleted;
-                changed = true;
-            }
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(-1f);
             if (ImGui.Checkbox("出港直後を通知", ref notifyUnderway))
             {
                 this.editingSettings.NotifyVoyageUnderway = notifyUnderway;
                 changed = true;
             }
+            
+            // Note: 航海完了通知は Phase 13 で廃止されました
+            // 出航時の帰還予定通知のみを送信します
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
@@ -75,6 +67,56 @@ public sealed partial class NotificationMonitorWindowRenderer
             {
                 this.editingSettings.DeadLetterRetentionLimit = Math.Clamp(deadLetters, 1, 64);
                 changed = true;
+            }
+
+            // Phase 13: Discord Reminder Bot 統合（Task 3.4）
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextColored(UiTheme.MutedText, "リマインダー連携");
+            ImGui.TableNextColumn();
+            var enableReminder = this.editingSettings.EnableReminderCommand;
+            if (ImGui.Checkbox("リマインダーコマンドを含める", ref enableReminder))
+            {
+                this.editingSettings.EnableReminderCommand = enableReminder;
+                changed = true;
+            }
+
+            if (this.editingSettings.EnableReminderCommand)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Indent();
+                ImGui.TextWrapped(
+                    "通知にDiscord Reminder Botのコマンドを追加します。" +
+                    "コマンドをコピペして実行すると、帰還時刻にリマインダーが送信されます。");
+                
+                ImGui.Spacing();
+                ImGui.Text("チャンネル名:");
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(200f);
+                
+                // ReminderChannelName用の入力
+                var channelName = this.editingSettings.ReminderChannelName ?? "#submarine";
+                var buffer = new byte[256];
+                var bytes = System.Text.Encoding.UTF8.GetBytes(channelName);
+                Array.Copy(bytes, buffer, Math.Min(bytes.Length, buffer.Length - 1));
+                
+                if (ImGui.InputText("##reminderChannel", buffer, ImGuiInputTextFlags.None))
+                {
+                    var text = System.Text.Encoding.UTF8.GetString(buffer);
+                    var nullIndex = text.IndexOf('\0');
+                    if (nullIndex >= 0)
+                    {
+                        text = text[..nullIndex];
+                    }
+                    this.editingSettings.ReminderChannelName = text.Trim();
+                    changed = true;
+                }
+                
+                ImGui.SameLine();
+                ImGui.TextColored(UiTheme.MutedText, "例: #submarine");
+                ImGui.Unindent();
             }
 
             ImGui.EndTable();

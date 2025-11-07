@@ -129,7 +129,7 @@ public sealed partial class NotificationMonitorWindowRenderer
                 }
 
                 ImGui.TableSetColumnIndex(4);
-                if (ImGui.SmallButton("再送"))
+                if (DrawRetryButtonWithTooltip(item))
                 {
                     this.queueViewModel.TryRequeue(item.Envelope.HashKey);
                 }
@@ -149,9 +149,13 @@ public sealed partial class NotificationMonitorWindowRenderer
         this.settings.NotionWebhookUrl = this.editingSettings.NotionWebhookUrl;
         this.settings.DeadLetterRetentionLimit = this.editingSettings.DeadLetterRetentionLimit;
         this.settings.ForceNotifyUnderway = this.editingSettings.ForceNotifyUnderway;
-        this.settings.NotifyVoyageCompleted = this.editingSettings.NotifyVoyageCompleted;
+        // Note: NotifyVoyageCompleted は Phase 13 で廃止（設定から削除）
         this.settings.NotifyVoyageUnderway = this.editingSettings.NotifyVoyageUnderway;
         this.settings.DiscordBatchWindowSeconds = Math.Clamp(this.editingSettings.DiscordBatchWindowSeconds, 0.5, 15.0);
+        
+        // Phase 13: Discord Reminder Bot 統合設定
+        this.settings.EnableReminderCommand = this.editingSettings.EnableReminderCommand;
+        this.settings.ReminderChannelName = this.editingSettings.ReminderChannelName;
 
         this.queueOptions.DeadLetterCapacity = Math.Max(1, this.editingSettings.DeadLetterRetentionLimit);
         this.settingsProvider.SaveAsync(this.settings).GetAwaiter().GetResult();
