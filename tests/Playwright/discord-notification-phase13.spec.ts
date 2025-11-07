@@ -2,13 +2,13 @@
 // Verifies UI changes and notification format optimization
 
 import { test, expect } from '@playwright/test';
-import { MainWindowFixture } from './fixtures/main-window-fixture';
+import { MainWindowHarness } from './fixtures/main-window-fixture';
 
 test.describe('@notification @phase13 Discord notification optimization', () => {
   
   test('completed notification checkbox is removed from UI', async ({ page }) => {
-    const fixture = new MainWindowFixture(page);
-    await fixture.launch();
+    const fixture = new MainWindowHarness(page);
+    await fixture.initialize();
     
     // Navigate to notification tab
     await page.click('text=Notification');
@@ -24,8 +24,8 @@ test.describe('@notification @phase13 Discord notification optimization', () => 
   });
 
   test('reminder settings section is visible', async ({ page }) => {
-    const fixture = new MainWindowFixture(page);
-    await fixture.launch();
+    const fixture = new MainWindowHarness(page);
+    await fixture.initialize();
     
     await page.click('text=Notification');
     await page.waitForTimeout(500);
@@ -36,8 +36,8 @@ test.describe('@notification @phase13 Discord notification optimization', () => 
   });
 
   test('reminder channel input appears when enabled', async ({ page }) => {
-    const fixture = new MainWindowFixture(page);
-    await fixture.launch();
+    const fixture = new MainWindowHarness(page);
+    await fixture.initialize();
     
     await page.click('text=Notification');
     await page.waitForTimeout(500);
@@ -56,8 +56,8 @@ test.describe('@notification @phase13 Discord notification optimization', () => 
   });
 
   test('reminder help text is displayed when enabled', async ({ page }) => {
-    const fixture = new MainWindowFixture(page);
-    await fixture.launch();
+    const fixture = new MainWindowHarness(page);
+    await fixture.initialize();
     
     await page.click('text=Notification');
     await page.waitForTimeout(500);
@@ -75,8 +75,8 @@ test.describe('@notification @phase13 Discord notification optimization', () => 
   });
 
   test('settings can be saved with reminder enabled', async ({ page }) => {
-    const fixture = new MainWindowFixture(page);
-    await fixture.launch();
+    const fixture = new MainWindowHarness(page);
+    await fixture.initialize();
     
     await page.click('text=Notification');
     await page.waitForTimeout(500);

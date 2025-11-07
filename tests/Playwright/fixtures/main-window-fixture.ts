@@ -21,7 +21,7 @@ export const test = base.extend<MainWindowFixtures>({
 
 export { expect };
 
-class MainWindowHarness {
+export class MainWindowHarness {
   constructor(private readonly page: Page) {}
 
   async initialize(): Promise<void> {
