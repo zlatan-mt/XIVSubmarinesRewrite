@@ -9,7 +9,8 @@ npm-debug.log*
 store/
 logs/
 logs/**
-AGENTS.md
+# Ignore AGENTS.md only in root directory, not in docs/
+/AGENTS.md
 vendor/*
 !vendor/Dalamud
 vendor/Dalamud/*
