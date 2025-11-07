@@ -292,17 +292,32 @@ release → タグ → GitHub Release
 
 ## ドキュメント構成
 
-### ユーザー向け
-- `README.md`: プロジェクト概要、インストール手順
-- `CHANGELOG.md`: バージョン履歴
+### ユーザー向け（releaseブランチに含める）
+- `README.md`: プロジェクト概要、インストール手順、使用方法
+- `CHANGELOG.md`: バージョン履歴（Keep a Changelog形式）
+- `RELEASE_NOTES_v*.md`: リリースノート（最新版のみ）
 
-### 開発者向け
-- `AGENTS.md`: Cursor/Codex用開発ガイド
-- `CLAUDE.md`: Claude Code用開発ガイド
-- `plans/phase*.md`: Phase別開発計画（developのみ）
-- `plans/specs/`: cc-sdd仕様書（developのみ）
+### 開発者向け（developブランチのみ）
+- `docs/ai-development/`: AI開発支援ドキュメント
+  - `AGENTS.md`: Cursor/Codex統合ガイド
+  - `CLAUDE.md`: Claude Code統合ガイド
+  - `QUICKSTART.md`: クイックスタートガイド
+- `docs/release/`: リリース作業ドキュメント
+  - `github-release.md`: GitHub Release作成手順
+  - `release-checklist.md`: リリースチェックリスト
+- `plans/`: Phase計画とcc-sdd仕様書
+  - `phase*.md`: Phase計画
+  - `*completion*.md`: Phase完了レポート
+  - `*installation*.md`: インストール計画
+  - `v*.md`: リリース準備サマリー
+  - `specs/`: cc-sdd仕様書（requirements, design, tasks, steering）
 
-### リリース向け
-- `RELEASE_NOTES_*.md`: リリースノート
-- `build-info.txt`: ビルド情報（CI生成）
+### ドキュメント分類ルール
+- **ユーザー向け**: ルートディレクトリに配置、releaseブランチに含める
+- **開発者向け**: `docs/`配下に配置、developブランチのみ
+- **開発計画**: `plans/`配下に配置、developブランチのみ
+- **一時的ドキュメント**: Phase完了レポート等は`plans/`配下に配置
+
+### リリース向け（補足）
+- `build-info.txt`: ビルド情報（CI生成、release-package/に含まれる）
 

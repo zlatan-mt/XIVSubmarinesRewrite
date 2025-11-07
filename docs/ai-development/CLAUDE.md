@@ -275,9 +275,9 @@ Claude Code: コードレビュー、品質チェック
 
 ### ファイル共有
 - `plans/specs/`: 3ツール共通の仕様書置き場
-- `.kiro/steering/`: 共有プロジェクトメモリ
-- `AGENTS.md`: Cursor/Codex用ガイド
-- `CLAUDE.md`: 本ファイル（Claude Code専用）
+- `plans/specs/steering/`: 共有プロジェクトメモリ
+- `docs/ai-development/AGENTS.md`: Cursor/Codex用ガイド
+- `docs/ai-development/CLAUDE.md`: 本ファイル（Claude Code専用）
 
 ---
 
@@ -313,10 +313,11 @@ Claude Code: コードレビュー、品質チェック
 ## 📚 参考資料
 
 ### 内部ドキュメント
-- `AGENTS.md`: Cursor/Codex用ガイド
+- `docs/ai-development/AGENTS.md`: Cursor/Codex用ガイド
+- `docs/ai-development/QUICKSTART.md`: クイックスタートガイド
 - `README.md`: プロジェクト概要
 - `CHANGELOG.md`: バージョン履歴
-- `plans/specs/.kiro/steering/`: プロジェクトメモリ
+- `plans/specs/steering/`: プロジェクトメモリ
 
 ### 外部リソース
 - Dalamud API Documentation
@@ -325,7 +326,7 @@ Claude Code: コードレビュー、品質チェック
 
 ---
 
-**最終更新**: 2025-10-25  
+**最終更新**: 2025-01-27  
 **cc-sdd バージョン**: v1.1.5 / v2.0.0-alpha.3  
 **対応AI**: Claude Code  
 **推論モデル**: Claude Sonnet 4.5

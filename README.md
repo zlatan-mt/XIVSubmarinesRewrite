@@ -102,13 +102,13 @@ git clone -b develop https://github.com/zlatan-mt/XIVSubmarinesRewrite.git
 ```
 
 開発資料、設計ドキュメント、計画書は `develop` ブランチの以下のディレクトリに含まれています：
-- `docs/` - 開発ドキュメント
-- `plans/` - フェーズ別開発計画
-- `.serena/` - 開発環境設定
+- `docs/ai-development/` - AI開発支援ドキュメント（Cursor/Codex/Claude Code用）
+- `docs/release/` - リリース作業手順
+- `plans/` - フェーズ別開発計画とcc-sdd仕様書
 
 ### ビルドとテスト
 
-詳細な開発手順は `develop` ブランチの `docs/` ディレクトリを参照してください。
+詳細な開発手順は `develop` ブランチの `docs/ai-development/` ディレクトリを参照してください。
 
 ## ライセンス
 このプロジェクトは MIT ライセンスの下で公開されています。
