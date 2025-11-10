@@ -8,6 +8,8 @@ namespace XIVSubmarinesRewrite.Infrastructure.Acquisition;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using XIVSubmarinesRewrite.Domain.Models;
@@ -31,13 +33,14 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
             return null;
         }
 
-        var name = ExtractName(row.Texts) ?? string.Empty;
+        var name = this.ExtractName(row.Texts) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(name))
         {
             name = "Submarine-" + row.NodeId.ToString(CultureInfo.InvariantCulture);
         }
 
-        var submarineId = this.CreateSubmarineId(row.NodeId);
+        // 名前を使用して実際のSlot番号を解決
+        var submarineId = this.CreateSubmarineId(row.NodeId, name);
         var route = FindRouteHint(row.Texts)
             ?? this.TryReadRouteFromAgent(submarineId)
             ?? this.TryReadRouteFromMemory(submarineId)
@@ -64,13 +67,29 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         return new Submarine(submarineId, name, string.Empty, new[] { voyage });
     }
 
-    private SubmarineId CreateSubmarineId(uint nodeId)
+    private SubmarineId CreateSubmarineId(uint nodeId, string? submarineName = null)
     {
         var cid = this.clientState.LocalContentId;
-        var slot = nodeId <= byte.MaxValue ? (byte)nodeId : SubmarineId.PendingSlot;
-        if (slot >= 4)
+        byte slot = SubmarineId.PendingSlot;
+
+        // まず名前から実際のSlot番号を解決を試みる
+        if (!string.IsNullOrWhiteSpace(submarineName))
         {
-            slot = SubmarineId.PendingSlot;
+            var actualSlot = this.TryResolveActualSlotFromName(submarineName);
+            if (actualSlot.HasValue)
+            {
+                slot = actualSlot.Value;
+            }
+        }
+
+        // 解決できない場合はNodeIdをフォールバック（既存の動作）
+        if (slot == SubmarineId.PendingSlot)
+        {
+            slot = nodeId <= byte.MaxValue ? (byte)nodeId : SubmarineId.PendingSlot;
+            if (slot >= 4)
+            {
+                slot = SubmarineId.PendingSlot;
+            }
         }
 
         if (cid == 0)
@@ -79,6 +98,76 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         }
 
         return new SubmarineId(cid, slot);
+    }
+
+    private unsafe byte? TryResolveActualSlotFromName(string submarineName)
+    {
+        var manager = HousingManager.Instance();
+        if (manager == null)
+        {
+            return null;
+        }
+
+        var territory = manager->WorkshopTerritory;
+        if (territory == null)
+        {
+            return null;
+        }
+
+        var dataPointers = territory->Submersible.DataPointers;
+        byte? foundSlot = null;
+
+        for (byte slot = 0; slot < 4 && slot < dataPointers.Length; slot++)
+        {
+            var subData = dataPointers[slot].Value;
+            if (subData == null)
+            {
+                continue;
+            }
+
+            var name = this.ReadSubmarineName(subData);
+            if (string.Equals(name, submarineName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (foundSlot.HasValue)
+                {
+                    this.log.Log(LogLevel.Warning,
+                        $"[UI Inspector] Duplicate submarine name '{submarineName}' found at slots {foundSlot.Value} and {slot}. Using first occurrence (Slot {foundSlot.Value}).");
+                    // 重複が検出された場合、最初に見つかったSlotを使用
+                    return foundSlot.Value;
+                }
+
+                foundSlot = slot;
+            }
+        }
+
+        if (foundSlot.HasValue)
+        {
+            this.log.Log(LogLevel.Debug, $"[UI Inspector] Resolved submarine '{submarineName}' to actual Slot {foundSlot.Value}");
+        }
+        else
+        {
+            this.log.Log(LogLevel.Debug, $"[UI Inspector] Could not resolve submarine '{submarineName}' to actual Slot (not found in memory)");
+        }
+
+        return foundSlot;
+    }
+
+    private unsafe string ReadSubmarineName(HousingWorkshopSubmersibleSubData* vessel)
+    {
+        if (vessel == null)
+        {
+            return string.Empty;
+        }
+
+        const int NameOffset = 0x22;
+        var span = new ReadOnlySpan<byte>((byte*)vessel + NameOffset, 20);
+        var terminator = span.IndexOf((byte)0);
+        if (terminator >= 0)
+        {
+            span = span[..terminator];
+        }
+
+        return span.IsEmpty ? string.Empty : Encoding.UTF8.GetString(span);
     }
 
     private unsafe string? TryReadRouteFromMemory(SubmarineId submarineId)
@@ -233,17 +322,22 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
     private string? TryGetCachedRoute(SubmarineId submarineId)
         => this.cachedRoutes.TryGetValue(submarineId, out var cached) ? cached : null;
 
-    private static string? ExtractName(IReadOnlyList<string> texts)
+    private string? ExtractName(IReadOnlyList<string> texts)
     {
+        this.log.Log(LogLevel.Debug, "[UI Inspector] ExtractName called with " + texts.Count + " texts: " + string.Join(", ", texts.Select(t => $"'{t}'")));
+
         foreach (var text in texts)
         {
             var candidate = ExtractNameCandidate(text);
+            this.log.Log(LogLevel.Debug, $"[UI Inspector] ExtractNameCandidate('{text}') => '{candidate ?? "<null>"}'");
             if (!string.IsNullOrWhiteSpace(candidate))
             {
+                this.log.Log(LogLevel.Debug, $"[UI Inspector] ExtractName returning: '{candidate}'");
                 return candidate;
             }
         }
 
+        this.log.Log(LogLevel.Debug, "[UI Inspector] ExtractName returning null (no valid candidate found)");
         return null;
     }
 

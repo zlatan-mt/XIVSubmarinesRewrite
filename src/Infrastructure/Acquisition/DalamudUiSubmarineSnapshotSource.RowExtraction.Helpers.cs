@@ -380,7 +380,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
 
         var hasRoute = routeHint is not null;
         var hasEta = etaHint is not null || statusHint is not null;
-        var name = ExtractName(row.Texts) ?? string.Empty;
+        var name = this.ExtractName(row.Texts) ?? string.Empty;
         var route = routeHint ?? string.Empty;
         var eta = etaHint ?? string.Empty;
         var key = (name + "|" + route + "|" + eta).ToLowerInvariant();
@@ -499,7 +499,18 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
             }
         }
 
-        if (ExtractName(row.Texts) is { Length: > 0 })
+        // Check if we can extract a valid submarine name
+        bool hasValidName = false;
+        foreach (var text in row.Texts)
+        {
+            if (ExtractNameCandidate(text) is { Length: > 0 })
+            {
+                hasValidName = true;
+                break;
+            }
+        }
+
+        if (hasValidName)
         {
             score += 1;
         }
