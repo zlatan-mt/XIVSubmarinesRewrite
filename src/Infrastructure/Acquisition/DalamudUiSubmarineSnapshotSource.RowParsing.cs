@@ -349,9 +349,20 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         }
 
         var trimmed = text.Trim();
-        if (LooksLikeRoute(trimmed) || LooksLikeEta(trimmed) || LooksLikeRank(trimmed) || IsStatusText(trimmed))
+        if (LooksLikeRoute(trimmed) || LooksLikeEta(trimmed) || LooksLikeRank(trimmed))
         {
             return null;
+        }
+
+        // ステータステキストを含む場合、ステータス部分を除去して名前を抽出
+        if (IsStatusText(trimmed))
+        {
+            var stripped = StripStatusSuffix(trimmed);
+            if (string.IsNullOrWhiteSpace(stripped))
+            {
+                return null;  // 名前部分がない
+            }
+            trimmed = stripped;
         }
 
         var bracketIndex = trimmed.IndexOf('[');
@@ -366,6 +377,53 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         }
 
         return trimmed;
+    }
+
+    private static string? StripStatusSuffix(string text)
+    {
+        // 全ステータスキーワードを結合
+        var allStatusKeywords = StatusCompletedKeywords
+            .Concat(StatusUnderwayKeywords)
+            .Concat(StatusScheduledKeywords);
+
+        var earliestIndex = -1;
+
+        foreach (var keyword in allStatusKeywords)
+        {
+            // 単語境界を考慮：キーワードの前に空白があるか、文字列の先頭である必要がある
+            var index = 0;
+            while ((index = text.IndexOf(keyword, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+            {
+                // キーワードの前が空白または先頭である場合のみ有効とみなす
+                if (index == 0 || char.IsWhiteSpace(text[index - 1]))
+                {
+                    if (index > 0)  // 前に文字がある場合
+                    {
+                        if (earliestIndex < 0 || index < earliestIndex)
+                        {
+                            earliestIndex = index;
+                        }
+                    }
+                    break;
+                }
+                index++;
+            }
+        }
+
+        if (earliestIndex > 0)
+        {
+            return text[..earliestIndex].Trim();
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// テスト用のpublicラッパー。ExtractNameCandidate をテストから呼び出すために使用します。
+    /// </summary>
+    public static string? ExtractNameCandidateForTest(string text)
+    {
+        return ExtractNameCandidate(text);
     }
 
     private static string? FindRouteHint(IReadOnlyList<string> texts)
