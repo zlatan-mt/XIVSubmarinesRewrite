@@ -354,15 +354,21 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
             return null;
         }
 
-        // ステータステキストを含む場合、ステータス部分を除去して名前を抽出
-        if (IsStatusText(trimmed))
+        // ステータステキストが単語境界で区切られて存在する場合、ステータス部分を除去して名前を抽出
+        // StripStatusSuffixは単語境界を考慮してステータスを除去する。
+        // - 除去できた場合（non-null）: "Name 探索完了" → "Name" のように名前を返す
+        // - 除去できなかった場合（null）: "MyReturn" や "探索完了" のようなケース
+        //   → IsOnlyStatusTextで完全一致を確認し、純粋なステータスのみを除外
+        var stripped = StripStatusSuffix(trimmed);
+        if (stripped is not null)
         {
-            var stripped = StripStatusSuffix(trimmed);
-            if (string.IsNullOrWhiteSpace(stripped))
-            {
-                return null;  // 名前部分がない
-            }
+            // ステータスが除去できた場合は、その結果を使用
             trimmed = stripped;
+        }
+        else if (IsOnlyStatusText(trimmed))
+        {
+            // テキスト全体が純粋にステータスキーワードのみの場合は除外
+            return null;
         }
 
         var bracketIndex = trimmed.IndexOf('[');
@@ -416,6 +422,26 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         }
 
         return null;
+    }
+
+    private static bool IsOnlyStatusText(string text)
+    {
+        // テキストが純粋にステータスキーワードのみかどうかを確認
+        // 空白を除去した後、いずれかのステータスキーワードと完全一致するかチェック
+        var trimmed = text.Trim();
+        var allStatusKeywords = StatusCompletedKeywords
+            .Concat(StatusUnderwayKeywords)
+            .Concat(StatusScheduledKeywords);
+
+        foreach (var keyword in allStatusKeywords)
+        {
+            if (trimmed.Equals(keyword, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
