@@ -83,7 +83,9 @@ jobs:
       
       - name: Create Release Package
         run: |
-          mkdir release-package
+          if (-not (Test-Path "release-package")) {
+            mkdir "release-package"
+          }
           copy "bin\Release\net9.0-windows\XIVSubmarinesRewrite.dll" "release-package\"
           copy "manifest.json" "release-package\"
           copy "plugin.json" "release-package\"

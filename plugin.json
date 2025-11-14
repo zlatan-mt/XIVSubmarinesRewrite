@@ -11,10 +11,10 @@
     "wip"
   ],
   "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
-  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png",
   "ImageUrls": [
-    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
+    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.0: Fixed submarine name extraction for completed voyages - status text is now properly removed from names.",
-  "AssemblyVersion": "1.2.0"
+  "Changelog": "1.2.1: Rebuilt release assets with slot-aware voyage GUIDs.",
+  "AssemblyVersion": "1.2.1"
 }

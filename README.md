@@ -1,8 +1,3 @@
-# PATH: apps/XIVSubmarinesRewrite/README.md
-# DESCRIPTION: Provide users with project overview, installation guidance, and contributor notes.
-# REASON: Keep onboarding and branching guidance in a single reference document.
-# RELEVANT FILES: release-package/README.md, repo.json, docs/ai-development/AGENTS.md
-
 # XIV Submarines Rewrite
 
 ## このプラグインについて
@@ -93,18 +88,21 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 ### ブランチ戦略
 
 - **`main`** - 開発と公開を兼ねる単一ブランチ。リリースはタグ（例: `v1.2.0`）で管理します。
-- **`feature/*`** - 必要なときだけ切る短命ブランチ。小さな修正は `main` に直接コミットしてください。+
+- **`feature/*`** - 必要なときだけ切る短命ブランチ。小さな修正は `main` に直接コミットしてください。
++
 ### 開発参加
 
 クローンするなら `main`：
 
 ```bash
 git clone -b main https://github.com/zlatan-mt/XIVSubmarinesRewrite.git
-```+
+```
++
 すべての開発資料は `main` に含まれます：
 - `docs/ai-development/` - AI開発支援ドキュメント
 - `docs/release/` - リリース手順
-- `plans/` - フェーズ計画と cc-sdd 仕様書+
+- `plans/` - フェーズ計画と cc-sdd 仕様書
++
 ### repo.json 配信
 
 Dalamud 用の `repo.json` は `main` から公開しています。
