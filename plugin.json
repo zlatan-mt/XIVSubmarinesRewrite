@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
   ],
-  "Changelog": "1.1.6: Improved Discord notification layout with aligned return times and fixed duplicate submarine issue.",
-  "AssemblyVersion": "1.1.6"
+  "Changelog": "1.2.0: Fixed submarine name extraction for completed voyages - status text is now properly removed from names.",
+  "AssemblyVersion": "1.2.0"
 }

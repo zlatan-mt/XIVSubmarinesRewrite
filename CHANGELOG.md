@@ -14,6 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.0] - 2025-11-14
+
+### Fixed
+
+- **探索完了状態の潜水艦名抽出の修正**：探索完了状態の潜水艦で「探索完了」テキストが名前から除去されず、Discord通知などで不正な名前が表示される問題を修正しました。
+  - `StatusCompletedKeywords`に「探索完了」複合語を追加
+  - 単語境界を考慮したステータステキスト除去ロジックの実装
+  - "MyReturn"や"Theready"のような有効な潜水艦名が誤って除外されないよう改善
+  - 診断用デバッグログの追加により問題の特定を容易化
+
+### Technical Details
+
+- `StripStatusSuffix`ヘルパーで単語境界を考慮してステータスキーワードを除去
+- `IsOnlyStatusText`ヘルパーで純粋なステータスキーワードのみを除外
+- `ExtractNameCandidate`で探索完了・航海中・待機中など全ステータスに対応
+- 包括的なユニットテスト（`RowParsingTests`）を追加
+
 ## [1.1.6] - 2025-01-27
 
 ### Changed
