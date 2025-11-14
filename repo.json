@@ -13,8 +13,8 @@
     "ImageUrls": [
       "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
     ],
-    "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.0/XIVSubmarinesRewrite-v1.2.0.zip",
-    "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.0/XIVSubmarinesRewrite-v1.2.0.zip",
+    "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.1/XIVSubmarinesRewrite-v1.2.1.zip",
+    "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.1/XIVSubmarinesRewrite-v1.2.1.zip",
     "LastUpdate": 1763111443,
     "_comment_path": "apps/XIVSubmarinesRewrite/repo.json",
     "_comment_summary": "Dalamud 用配布リスト定義ファイル",

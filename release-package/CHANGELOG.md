@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.1] - 2025-11-14
+
+### Fixed
+
+- **Voyage GUID の一意性強化**: キャラクター ID とスロットを含む MD5 で GUID を生成し、同じ帰還時刻でも通知が混ざらないようにしました。
+- **Discord 通知の安定化**: slot-aware GUID が ForceImmediate や集約サイクルの状態に即して通知するようにします。
+
+### Technical Details
+
+- 1.2.1 は 1.2.0 のリビルドで、リリース用 manifest/plugin を 1.2.1 へ更新してあります。
+
 ## [1.2.0] - 2025-11-14
 
 ### Fixed

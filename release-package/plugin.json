@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.0: Fixed submarine name extraction for completed voyages so status markers are removed cleanly.",
-  "AssemblyVersion": "1.2.0"
+  "Changelog": "1.2.1: Rebuilt with slot-aware voyage GUIDs and updated release metadata.",
+  "AssemblyVersion": "1.2.1"
 }
