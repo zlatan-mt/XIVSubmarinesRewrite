@@ -33,6 +33,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         "complete",
         "completed",
         "ready",
+        "探索完了",  // より長い複合語を先に配置
         "完了",
         "帰港",
         "到着",
@@ -116,15 +117,15 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
 
     private static Guid ComputeVoyageGuid(SubmarineId submarineId, DateTime? arrival)
     {
+        // 同じフレーム内で複数の潜水艦が同じarrival時刻を持つ場合のGuid衝突を防ぐため、
+        // characterId、slot、timestampを明示的に組み合わせてユニークなGuidを生成
         var timestamp = arrival?.ToUniversalTime().Ticks ?? DateTime.UtcNow.Ticks;
-        var nameBytes = Encoding.UTF8.GetBytes(submarineId.ToString());
-        var length = Math.Min(nameBytes.Length, 32);
-        Span<byte> buffer = stackalloc byte[sizeof(long) + length];
+        Span<byte> buffer = stackalloc byte[sizeof(long) + sizeof(ulong) + sizeof(byte)];
+
+        // バッファ構造: [timestamp (8 bytes)][characterId (8 bytes)][slot (1 byte)]
         BitConverter.TryWriteBytes(buffer[..sizeof(long)], timestamp);
-        if (length > 0)
-        {
-            nameBytes.AsSpan(0, length).CopyTo(buffer[sizeof(long)..]);
-        }
+        BitConverter.TryWriteBytes(buffer.Slice(sizeof(long), sizeof(ulong)), submarineId.CharacterId);
+        buffer[sizeof(long) + sizeof(ulong)] = submarineId.Slot;
 
         var hash = MD5.HashData(buffer);
         return new Guid(hash);
