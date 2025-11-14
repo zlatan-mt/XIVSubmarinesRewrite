@@ -11,10 +11,10 @@
     "wip"
   ],
   "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
-  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png",
   "ImageUrls": [
-    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
+    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.1.6: Improved Discord notification layout with aligned return times and fixed duplicate submarine issue.",
-  "AssemblyVersion": "1.1.6"
+  "Changelog": "1.2.0: Fixed submarine name extraction for completed voyages so status markers are removed cleanly.",
+  "AssemblyVersion": "1.2.0"
 }

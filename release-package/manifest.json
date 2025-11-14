@@ -7,14 +7,14 @@
   "ApplicableVersion": "any",
   "DalamudApiLevel": 13,
   "AssemblyName": "XIVSubmarinesRewrite.dll",
-  "AssemblyVersion": "1.1.6",
+  "AssemblyVersion": "1.2.0",
   "Tags": [
     "rewrite",
     "wip"
   ],
-  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png",
   "RepoUrl": "https://github.com/zlatan-mt/XIVSubmarinesRewrite",
   "ImageUrls": [
-    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/icon.png"
+    "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ]
 }

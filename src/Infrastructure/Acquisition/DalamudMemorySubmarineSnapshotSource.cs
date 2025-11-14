@@ -93,7 +93,7 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
                 // FFXIVの潜水艦スロットは0-3（4隻）なので、i+1ではなくiを使用（ただし、iは0-4の範囲）
                 var slot = (byte)Math.Min(i, 3); // 0-3の範囲に制限
                 var submarineId = new SubmarineId(characterId, slot);
-                var voyageGuid = ComputeVoyageId(name, registerSeconds, returnSeconds);
+                var voyageGuid = ComputeVoyageId(name, registerSeconds, returnSeconds, characterId, slot);
                 var voyageId = VoyageId.Create(submarineId, voyageGuid);
                 var voyage = new Voyage(voyageId, routeId ?? string.Empty, departure, arrival, status);
 
@@ -157,16 +157,21 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
         return string.Join("-", segments);
     }
 
-    private static Guid ComputeVoyageId(string name, uint registerSeconds, uint returnSeconds)
+    private static Guid ComputeVoyageId(string name, uint registerSeconds, uint returnSeconds, ulong characterId, byte slot)
     {
         Span<byte> data = stackalloc byte[sizeof(uint) * 2];
         BitConverter.TryWriteBytes(data[..sizeof(uint)], registerSeconds);
         BitConverter.TryWriteBytes(data[sizeof(uint)..], returnSeconds);
-        var nameBytes = Encoding.UTF8.GetBytes(name);
+        var nameBytes = Encoding.UTF8.GetBytes(name ?? string.Empty);
         var length = Math.Min(nameBytes.Length, 32);
-        Span<byte> combined = stackalloc byte[data.Length + length];
+        Span<byte> combined = stackalloc byte[data.Length + sizeof(ulong) + sizeof(byte) + length];
         data.CopyTo(combined);
-        nameBytes.AsSpan(0, length).CopyTo(combined[data.Length..]);
+        BitConverter.TryWriteBytes(combined.Slice(data.Length, sizeof(ulong)), characterId);
+        combined[data.Length + sizeof(ulong)] = slot;
+        if (length > 0)
+        {
+            nameBytes.AsSpan(0, length).CopyTo(combined.Slice(data.Length + sizeof(ulong) + sizeof(byte)));
+        }
         var hash = MD5.HashData(combined);
         return new Guid(hash);
     }

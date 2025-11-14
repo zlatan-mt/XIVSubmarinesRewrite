@@ -9,9 +9,9 @@
     "ApplicableVersion": "any",
     "DalamudApiLevel": 13,
     "Punchline": "Next-generation submarine workshop tools",
-    "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/release/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png",
     "ImageUrls": [
-      "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/release/icon.png"
+      "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
     ],
     "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.0/XIVSubmarinesRewrite-v1.2.0.zip",
     "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.2.0/XIVSubmarinesRewrite-v1.2.0.zip",

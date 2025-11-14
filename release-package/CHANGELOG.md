@@ -14,6 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.0] - 2025-11-14
+
+### Fixed
+
+- **探索完了状態の潜水艦名抽出の修正**：Discord通知や UI の名称表示で「探索完了」テキストが残らないようにしました。
+  - `StatusCompletedKeywords` に複合語 `探索完了` を追加
+  - 単語境界を考慮した `StripStatusSuffix` でステータステキストを削除
+  - `IsOnlyStatusText` は純粋にステータスのみを持つ候補を除外
+  - `ComputeVoyageId` がキャラクターID＋スロットを含めて GUID を生成し、同名艦でも衝突を防止
+
+### Technical Details
+
+- `StripStatusSuffix` が単語境界と空白をチェックしてステータス部分を切り出すようになりました。
+- `IsOnlyStatusText` が残った文字列が完全にステータスキーワードだけかを判定します。
+- `ExtractNameCandidate` がステータスと角括弧をトリミングしたうえで名前を返すため、Discord通知の列がクリーンになります。
+- `ComputeVoyageId` は `submarineId.CharacterId` と `submarineId.Slot` を含めて GUID を構築し、異なる艦隊やキャラクターでも固有になります。
+
 ## [1.1.6] - 2025-01-27
 
 ### Changed
