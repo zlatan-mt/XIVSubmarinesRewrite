@@ -35,6 +35,8 @@ vendor/**/*.exe
 Local.props
 .vscode/
 .vs/
+# cc-sdd local cache
+.kiro/cache/
 
 # Logs and temporary files
 logs/

@@ -1,3 +1,8 @@
+# PATH: apps/XIVSubmarinesRewrite/README.md
+# DESCRIPTION: Provide users with project overview, installation guidance, and contributor notes.
+# REASON: Keep onboarding and branching guidance in a single reference document.
+# RELEVANT FILES: release-package/README.md, repo.json, docs/ai-development/AGENTS.md
+
 # XIV Submarines Rewrite
 
 ## このプラグインについて
@@ -24,7 +29,7 @@ Dalamud Plugin Installer から直接インストールできます。
 
 1. Dalamud の設定でカスタムリポジトリを追加：
    ```
-   https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/repo.json
+   https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/repo.json
    ```
 
 2. プラグインインストーラーで「XIV Submarines Rewrite」を検索してインストール
@@ -87,28 +92,26 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 
 ### ブランチ戦略
 
-このリポジトリは以下のブランチ戦略を採用しています：
-
-- **`release`** - 利用者向けの公開ブランチ（クリーンな構成、開発資料を除外）
-- **`develop`** - 開発作業用ブランチ（全ファイル・ドキュメント・計画資料を含む完全な開発環境）
-- **`master`** - レガシーブランチ（非推奨、`release`への移行を推奨）
-
+- **`main`** - 開発と公開を兼ねる単一ブランチ。リリースはタグ（例: `v1.2.0`）で管理します。
+- **`feature/*`** - 必要なときだけ切る短命ブランチ。小さな修正は `main` に直接コミットしてください。+
 ### 開発参加
 
-開発に参加する場合は `develop` ブランチをクローンしてください：
+クローンするなら `main`：
 
 ```bash
-git clone -b develop https://github.com/zlatan-mt/XIVSubmarinesRewrite.git
-```
+git clone -b main https://github.com/zlatan-mt/XIVSubmarinesRewrite.git
+```+
+すべての開発資料は `main` に含まれます：
+- `docs/ai-development/` - AI開発支援ドキュメント
+- `docs/release/` - リリース手順
+- `plans/` - フェーズ計画と cc-sdd 仕様書+
+### repo.json 配信
 
-開発資料、設計ドキュメント、計画書は `develop` ブランチの以下のディレクトリに含まれています：
-- `docs/ai-development/` - AI開発支援ドキュメント（Cursor/Codex/Claude Code用）
-- `docs/release/` - リリース作業手順
-- `plans/` - フェーズ別開発計画とcc-sdd仕様書
+Dalamud 用の `repo.json` は `main` から公開しています。
 
 ### ビルドとテスト
 
-詳細な開発手順は `develop` ブランチの `docs/ai-development/` ディレクトリを参照してください。
+詳細は `docs/ai-development/` の手順を参照してください。
 
 ## ライセンス
 このプロジェクトは MIT ライセンスの下で公開されています。

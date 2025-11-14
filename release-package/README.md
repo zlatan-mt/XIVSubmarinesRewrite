@@ -1,3 +1,8 @@
+# PATH: apps/XIVSubmarinesRewrite/release-package/README.md
+# DESCRIPTION: Outline release-specific install notes for the packaged plugin build.
+# REASON: Provide users with the same install guidance as the main repository release package.
+# RELEVANT FILES: README.md, release-package/manifest.json, repo.json
+
 # XIV Submarines Rewrite
 
 ## このプラグインについて
@@ -24,7 +29,7 @@ Dalamud Plugin Installer から直接インストールできます。
 
 1. Dalamud の設定でカスタムリポジトリを追加：
    ```
-   https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/master/repo.json
+   https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/repo.json
    ```
 
 2. プラグインインストーラーで「XIV Submarines Rewrite」を検索してインストール
@@ -64,4 +69,3 @@ Discord 通知を使う場合は「Discord 通知を有効化」をオンにし�
 
 ## ライセンス
 このプロジェクトは MIT ライセンスの下で公開されています。
-
