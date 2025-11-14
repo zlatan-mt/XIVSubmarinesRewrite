@@ -2,15 +2,27 @@
 # DESCRIPTION: Ignore build outputs and local working artifacts for the Dalamud plugin
 # REASON: Prevents generated or developer-specific files from polluting git history
 # RELEVANT FILES: XIVSubmarinesRewrite.csproj, Local.props.example
+
+# Node modules
 node_modules/
 dist/
-.DS_Store
 npm-debug.log*
-store/
-logs/
-logs/**
-# Ignore AGENTS.md only in root directory, not in docs/
-/AGENTS.md
+
+# Build outputs
+obj/
+bin/
+*.zip
+!repo.json
+
+# Test outputs
+tests/Playwright/node_modules/
+tests/Playwright/test-results/
+tests/Playwright/.artifacts/
+test-results/
+tools/**/bin/
+tools/**/obj/
+
+# Vendor DLLs
 vendor/*
 !vendor/Dalamud
 vendor/Dalamud/*
@@ -18,14 +30,28 @@ vendor/Dalamud/*
 vendor/**/*.dll
 vendor/**/*.pdb
 vendor/**/*.exe
-obj/
-bin/
-tests/Playwright/node_modules/
-tests/Playwright/test-results/
-tests/Playwright/.artifacts/
-test-results/
-tools/**/bin/
-tools/**/obj/
+
+# Local configuration
 Local.props
-Local.props.example
+.vscode/
+.vs/
+
+# Logs and temporary files
+logs/
+store/
+.DS_Store
+*.log
+
+# Backups and work-in-progress
+*.backup
+.cc-sdd.backup/
+pre-sdd-state.txt
+discord.plan.md
+branch-backup.txt
+commit-graph-backup.txt
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Original assets
 icon.original.png
