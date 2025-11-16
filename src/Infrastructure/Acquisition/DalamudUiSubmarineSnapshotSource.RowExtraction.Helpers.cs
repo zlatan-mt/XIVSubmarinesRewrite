@@ -82,7 +82,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
         "ベンチャー",
         "収集品",
         "返却",
-        "return",
+        // "return" は潜水艦の正当なステータス語なので除外
         "venture",
         "delivery",
         "supply",
@@ -515,7 +515,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
             score += 1;
         }
 
-        if (!hasRoute && !(hasStatus && !hasEta))
+        if (!hasRoute && !hasStatus)
         {
             score -= 1;
         }
