@@ -14,6 +14,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.4] - 2025-11-16
+
+### Fixed
+
+- **帰港状態の潜水艦が UI フィルタで除外される問題の修正**：英語クライアントで「Return from voyage」ステータスを持つ潜水艦がフィルタスコアリングで除外される問題を修正しました。
+  - `NegativeRowKeywords` から "return" キーワードを削除（正当なステータス語として認識）
+  - ペナルティロジックを `if (!hasRoute && !hasStatus)` に簡素化し、コード意図を明確化
+  - ステータスのみの行（「帰港」「探索完了」「Return from voyage」）が正しくスコア3以上を獲得することを保証
+
+### Added
+
+- **UI フィルタリングのユニットテスト追加**：`RowConfidenceTests.cs` を新設し、ステータスのみの行が正しく受理されることを検証
+  - 日本語・英語クライアントのステータス行をカバー
+  - リテイナー行の誤検出防止テストも追加
+
+### Technical Details
+
+- `DalamudUiSubmarineSnapshotSource.RowExtraction.Helpers.cs` でキーワード定義とスコアリング条件を修正
+- `ComputeConfidenceScoreForTest` ヘルパーでテストからスコア計算ロジックにアクセス可能に
+- テストプロジェクトのビルドエラー（重複 Compile アイテム、数値リテラルサフィックス）を修正
+
 ## [1.2.3] - 2025-11-16
 
 ### Changed

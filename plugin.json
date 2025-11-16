@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.3: Reduce production logging noise and finalize the ghost data fix.",
-  "AssemblyVersion": "1.2.3"
+  "Changelog": "1.2.4: Fixed UI filtering that excluded return-state submarines.",
+  "AssemblyVersion": "1.2.4"
 }

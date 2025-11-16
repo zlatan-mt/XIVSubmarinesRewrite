@@ -31,9 +31,9 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Version>1.2.3</Version>
-    <FileVersion>1.2.3.0</FileVersion>
-    <AssemblyVersion>1.2.3.0</AssemblyVersion>
+    <Version>1.2.4</Version>
+    <FileVersion>1.2.4.0</FileVersion>
+    <AssemblyVersion>1.2.4.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup>
     <BuildTimestamp Condition="'$(BuildTimestamp)' == ''">$([System.DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'"))</BuildTimestamp>
