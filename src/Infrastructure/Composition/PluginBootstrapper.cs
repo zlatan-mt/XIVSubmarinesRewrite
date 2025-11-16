@@ -13,6 +13,7 @@ using XIVSubmarinesRewrite.Application.Notifications;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using XIVSubmarinesRewrite.Application.Services;
+using XIVSubmarinesRewrite.Domain.Models;
 using XIVSubmarinesRewrite.Domain.Repositories;
 using XIVSubmarinesRewrite.Infrastructure.Acquisition;
 using XIVSubmarinesRewrite.Integrations.Notifications;
@@ -212,9 +213,26 @@ public sealed class PluginBootstrapper : IDisposable
 
         foreach (var storedSnapshot in storageService.LoadSnapshots())
         {
-            var snapshot = aggregator.Integrate(storedSnapshot);
+            // ゴーストデータをフィルタリング：Pending スロットは保持しつつ、実スロットは 0-3 のみ許可
+            static bool ShouldKeep(Submarine submarine)
+                => submarine.Id.IsPending || (!submarine.Id.IsPending && submarine.Id.Slot <= 3);
+
+            var validSubmarines = storedSnapshot.Submarines
+                .Where(ShouldKeep)
+                .ToList();
+
+            var removed = storedSnapshot.Submarines.Count - validSubmarines.Count;
+            if (removed > 0)
+            {
+                this.logSink.Log(LogLevel.Warning,
+                    $"[Plugin] Filtered {removed} ghost submarines (slot>3) from character {storedSnapshot.CharacterId}. Valid slots: 0-3.");
+            }
+
+            var cleanedSnapshot = storedSnapshot with { Submarines = validSubmarines };
+            var snapshot = aggregator.Integrate(cleanedSnapshot);
             cache.Update(snapshot, snapshot.CharacterId);
             characterRegistry.RegisterSnapshot(snapshot);
+            storageService.UpdateFromSnapshot(snapshot);
         }
 
         var orchestrator = new SnapshotOrchestrator(gateway, eventBus);

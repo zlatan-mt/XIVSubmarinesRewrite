@@ -73,7 +73,7 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
             var submersible = &workshop->Submersible;
             var pointerBase = (nint*)((byte*)submersible + SubmersiblePointerOffset);
 
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < 4; i++) // FFXIVの潜水艦は最大4隻（スロット0-3）
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var vesselPtr = (HousingWorkshopSubmersibleSubData*)pointerBase[i];
@@ -97,9 +97,8 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
                 var status = DetermineStatus(arrival);
 
                 var routeId = ExtractRouteIdentifier((byte*)vesselPtr + ExplorationPointsOffset);
-                // Slot番号の正規化: メモリソースでは0-4のインデックスを使用するが、実際のSlotは0-3の範囲に正規化
-                // FFXIVの潜水艦スロットは0-3（4隻）なので、i+1ではなくiを使用（ただし、iは0-4の範囲）
-                var slot = (byte)Math.Min(i, 3); // 0-3の範囲に制限
+                // iは0-3の範囲なので、slotはそのまま使用可能
+                var slot = (byte)i;
                 var submarineId = new SubmarineId(characterId, slot);
                 name = this.ApplyNameDebounce(submarineId, name, registerSeconds, returnSeconds);
                 var voyageGuid = ComputeVoyageId(name, registerSeconds, returnSeconds, characterId, slot);
