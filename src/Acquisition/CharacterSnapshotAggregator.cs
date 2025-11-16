@@ -104,13 +104,18 @@ public sealed class CharacterSnapshotAggregator
             this.LogUpsertEntry(incoming);
             try
             {
+                if (this.TrySuppressMemoryNameJitter(incoming))
+                {
+                    return;
+                }
+
                 if (this.submarines.TryGetValue(incoming.Id, out var existing))
                 {
                     this.submarines[incoming.Id] = MergeSubmarine(existing, incoming);
                     return;
                 }
 
-                if (!string.IsNullOrWhiteSpace(incoming.Name))
+                if (incoming.Id.IsPending && !string.IsNullOrWhiteSpace(incoming.Name))
                 {
                     foreach (var kvp in this.submarines)
                     {
@@ -120,7 +125,7 @@ public sealed class CharacterSnapshotAggregator
                             var merged = MergeSubmarine(kvp.Value, incoming with { Id = targetId });
                             this.log.Log(LogLevel.Debug, "[Acquisition] Name-based ID resolution " +
                                 $"incomingId={incoming.Id} matchedName={incoming.Name ?? "<unknown>"} " +
-                                $"existingId={kvp.Key} targetId={targetId}");
+                                $"existingId={kvp.Key} targetId={targetId} willRemove={kvp.Key} willAdd={targetId}");
                             this.submarines.Remove(kvp.Key);
                             this.submarines[targetId] = merged with { Id = targetId };
                             return;
@@ -148,6 +153,44 @@ public sealed class CharacterSnapshotAggregator
                 ? "<empty>"
                 : string.Join(", ", this.submarines.Select(kvp => $"{kvp.Key}:{kvp.Value.Name ?? "<unknown>"}"));
             this.log.Log(LogLevel.Trace, $"[Acquisition] UpsertSubmarine state char={this.characterId} total={this.submarines.Count} entries=[{entries}] source={this.lastSource}");
+        }
+
+        private bool TrySuppressMemoryNameJitter(Submarine incoming)
+        {
+            if (this.lastSource != AcquisitionSourceKind.Memory)
+            {
+                return false;
+            }
+
+            if (incoming.Id.IsPending)
+            {
+                return false;
+            }
+
+            if (!this.submarines.TryGetValue(incoming.Id, out var existing))
+            {
+                return false;
+            }
+
+            if (!VoyagesEquivalent(existing.Voyages, incoming.Voyages))
+            {
+                return false;
+            }
+
+            if (!string.Equals(existing.ProfileId, incoming.ProfileId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (string.Equals(existing.Name, incoming.Name, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var oldName = string.IsNullOrWhiteSpace(existing.Name) ? "<unknown>" : existing.Name;
+            var newName = string.IsNullOrWhiteSpace(incoming.Name) ? "<unknown>" : incoming.Name;
+            this.log.Log(LogLevel.Trace, $"[Acquisition] Suppressed memory name jitter char={this.characterId} id={incoming.Id} oldName={oldName} newName={newName}");
+            return true;
         }
 
         private static Submarine MergeSubmarine(Submarine baseline, Submarine incoming)
@@ -221,6 +264,41 @@ public sealed class CharacterSnapshotAggregator
             }
 
             return voyages;
+        }
+
+        private static bool VoyagesEquivalent(IReadOnlyList<Voyage> left, IReadOnlyList<Voyage> right)
+        {
+            if (left.Count != right.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < left.Count; i++)
+            {
+                var a = left[i];
+                var b = right[i];
+                if (a.Id != b.Id)
+                {
+                    return false;
+                }
+
+                if (!string.Equals(a.RouteId, b.RouteId, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                if (a.Departure != b.Departure || a.Arrival != b.Arrival)
+                {
+                    return false;
+                }
+
+                if (a.Status != b.Status)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

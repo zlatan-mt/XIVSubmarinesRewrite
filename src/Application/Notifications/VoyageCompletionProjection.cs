@@ -171,6 +171,12 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var hasState = this.forceNotifyStates.TryGetValue(submarineId, out var state);
         this.log.Log(LogLevel.Trace, $"[Notifications] HandleForceNotify evaluating submarineId={submarineId} label={submarineLabel} arrival={arrivalUtc:O} hasState={hasState}");
 
+        if (!hasState && !AllSubmarinesUnderway(snapshot.Submarines))
+        {
+            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "skip:not-all-underway", null);
+            return;
+        }
+
         if (!hasState)
         {
             this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:first-detect", null);

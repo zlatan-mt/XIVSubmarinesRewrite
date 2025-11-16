@@ -1,3 +1,8 @@
+// apps/XIVSubmarinesRewrite/src/Infrastructure/Acquisition/DalamudMemorySubmarineSnapshotSource.cs
+// Dalamudのメモリから潜水艦スナップショットを読み出します
+// メモリソース特有のノイズを抑えて安定したスナップショットを渡すために存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Acquisition/DataAcquisitionGateway.cs, apps/XIVSubmarinesRewrite/src/Acquisition/CharacterSnapshotAggregator.cs
+
 namespace XIVSubmarinesRewrite.Infrastructure.Acquisition;
 
 using System;
@@ -23,9 +28,12 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
     private const int RankOffset = 0x0E;
     private const int ExplorationPointsOffset = 0x42;
     private const int ExplorationPointsCount = 5;
+    private static readonly TimeSpan NameJitterSuppressionWindow = TimeSpan.FromMilliseconds(750);
 
     private readonly IClientState clientState;
     private readonly ILogSink log;
+    private readonly Dictionary<SubmarineId, NameSample> lastNameSamples = new ();
+    private readonly object sampleGate = new ();
 
     public DalamudMemorySubmarineSnapshotSource(IClientState clientState, ILogSink log)
     {
@@ -93,6 +101,7 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
                 // FFXIVの潜水艦スロットは0-3（4隻）なので、i+1ではなくiを使用（ただし、iは0-4の範囲）
                 var slot = (byte)Math.Min(i, 3); // 0-3の範囲に制限
                 var submarineId = new SubmarineId(characterId, slot);
+                name = this.ApplyNameDebounce(submarineId, name, registerSeconds, returnSeconds);
                 var voyageGuid = ComputeVoyageId(name, registerSeconds, returnSeconds, characterId, slot);
                 var voyageId = VoyageId.Create(submarineId, voyageGuid);
                 var voyage = new Voyage(voyageId, routeId ?? string.Empty, departure, arrival, status);
@@ -175,4 +184,34 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
         var hash = MD5.HashData(combined);
         return new Guid(hash);
     }
+
+    private string ApplyNameDebounce(SubmarineId submarineId, string name, uint registerSeconds, uint returnSeconds)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return name;
+        }
+
+        var now = DateTime.UtcNow;
+        lock (this.sampleGate)
+        {
+            if (this.lastNameSamples.TryGetValue(submarineId, out var sample))
+            {
+                var isSameVoyage = sample.RegisterSeconds == registerSeconds && sample.ReturnSeconds == returnSeconds;
+                var withinWindow = (now - sample.TimestampUtc) <= NameJitterSuppressionWindow;
+                if (isSameVoyage && withinWindow && !string.Equals(sample.Name, name, StringComparison.Ordinal))
+                {
+                    this.log.Log(LogLevel.Trace,
+                        $"[Memory] Suppressed jitter for {submarineId}: keeping name={sample.Name} newName={name} register={registerSeconds} return={returnSeconds}");
+                    return sample.Name;
+                }
+            }
+
+            this.lastNameSamples[submarineId] = new NameSample(name, registerSeconds, returnSeconds, now);
+        }
+
+        return name;
+    }
+
+    private readonly record struct NameSample(string Name, uint RegisterSeconds, uint ReturnSeconds, DateTime TimestampUtc);
 }
