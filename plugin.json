@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.1: Rebuilt release assets with slot-aware voyage GUIDs.",
-  "AssemblyVersion": "1.2.1"
+  "Changelog": "1.2.2: Fixed ghost submarine data causing duplicate names in notifications.",
+  "AssemblyVersion": "1.2.2"
 }

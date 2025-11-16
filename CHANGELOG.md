@@ -14,6 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.2] - 2025-11-16
+
+### Fixed
+
+- **ゴーストデータによる潜水艦名重複の修正**：永続化キャッシュに残留していた無効なスロット（4番以降）を持つ「ゴーストデータ」が原因で、Discord通知で潜水艦名が重複する問題を修正しました。
+  - プラグイン起動時にスロット0-3の範囲外の潜水艦データをクレンジング
+  - メモリデータソースの名前揺らぎ抑制を強化（デバウンス機能）
+  - ForceNotifyUnderway の遅延実行により、データ安定化を向上
+
+### Technical Details
+
+- `PluginBootstrapper` にゴーストデータフィルタリング処理を追加（slot>3を除外）
+- `DalamudMemorySubmarineSnapshotSource` に名前変更デバウンス機能を実装
+- 診断ログを追加し、ゴーストデータ除外とメモリ読み取りの可視性を向上
+- 根本原因分析レポートを `docs/analysis/` に追加
+
 ## [1.2.1] - 2025-11-14
 
 ### Fixed
