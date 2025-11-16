@@ -224,7 +224,7 @@ public sealed class PluginBootstrapper : IDisposable
             var removed = storedSnapshot.Submarines.Count - validSubmarines.Count;
             if (removed > 0)
             {
-                this.logSink.Log(LogLevel.Warning,
+                this.logSink.Log(LogLevel.Information,
                     $"[Plugin] Filtered {removed} ghost submarines (slot>3) from character {storedSnapshot.CharacterId}. Valid slots: 0-3.");
             }
 

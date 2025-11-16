@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.3] - 2025-11-16
+
+### Changed
+
+- **本番ログの静穏化**: ゴーストデータ除去の WARN を INFO へ引き下げ、起動毎の不要なアラートを防ぎました。
+- **UI 名前解析ログの削除**: `ExtractName` 系の診断 DEBUG を完全に除去し、UI 操作時のログスパムを抑制しました。
+- **航海完了デバッグログの削除**: 完了通知を無効化済みである旨の DEBUG 出力を取り除き、ForceNotify 以外の航海関連ログを最小化しました。
+
+### Technical Details
+
+- Dalamud 配布用 metadata (`manifest.json`, `plugin.json`, `repo.json`, release-package/*) と DLL バージョンを 1.2.3 へ更新。
+
 ## [1.2.2] - 2025-11-16
 
 ### Fixed

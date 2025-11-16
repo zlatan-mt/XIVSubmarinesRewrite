@@ -29,7 +29,7 @@ public sealed class NotificationCoordinatorForceImmediateTests
         var routeCatalog = new RouteCatalog(null, log);
         var coordinator = new NotificationCoordinator(discord, notion, formatter, routeCatalog, batcher, log);
 
-        var characterId = 0xBEEF_UL;
+        var characterId = 0xBEEFUL;
         var baseArrival = DateTime.UtcNow;
 
         // まず 4 隻分の Completed を処理してサイクルを有効化
@@ -64,7 +64,7 @@ public sealed class NotificationCoordinatorForceImmediateTests
         var routeCatalog = new RouteCatalog(null, log);
         var coordinator = new NotificationCoordinator(discord, notion, formatter, routeCatalog, batcher, log);
 
-        var characterId = 0xCAFE_BABE_UL;
+        var characterId = 0xCAFE_BABEUL;
         var baseArrival = DateTime.UtcNow;
 
         for (byte slot = 0; slot < 4; slot++)

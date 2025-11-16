@@ -26,9 +26,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\XIVSubmarinesRewrite.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="**\*.cs" />
-  </ItemGroup>
 </Project>
 

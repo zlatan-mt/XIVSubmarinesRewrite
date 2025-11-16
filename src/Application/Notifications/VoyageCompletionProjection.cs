@@ -129,9 +129,6 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
 
         // Completed通知は送信しない（Phase 13: Discord通知最適化）
         // 理由: ユーザーは出航時の帰還予定通知のみを必要とする
-        this.log.Log(LogLevel.Debug, 
-            $"[Notifications] Completed voyage {voyageId} detected but notifications are disabled " +
-            $"(arrival={voyage.Arrival}). Completed notifications are no longer sent as of Phase 13.");
 
         // ForceNotifyステートのクリーンアップは維持
         this.forceNotifyStates.Remove(submarineId);

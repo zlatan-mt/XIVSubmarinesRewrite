@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.3] - 2025-11-16
+
+### Changed
+
+- **ログノイズ削減**: ゴーストスロット除去を INFO ログに下げ、UI 名前解析や航海完了に紐づく DEBUG 出力を削除しました。
+- **配布メタデータ更新**: manifest / plugin / repo を 1.2.3 に揃え、GitHub リリース ZIP と整合させました。
+
 ## [1.2.1] - 2025-11-14
 
 ### Fixed

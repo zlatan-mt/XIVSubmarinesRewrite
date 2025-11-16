@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.1: Rebuilt with slot-aware voyage GUIDs and updated release metadata.",
-  "AssemblyVersion": "1.2.1"
+  "Changelog": "1.2.3: Reduced production logging noise and packaged the ghost-slot fix.",
+  "AssemblyVersion": "1.2.3"
 }

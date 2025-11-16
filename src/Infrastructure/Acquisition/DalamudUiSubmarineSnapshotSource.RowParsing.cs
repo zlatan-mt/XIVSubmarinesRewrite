@@ -324,20 +324,15 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
 
     private string? ExtractName(IReadOnlyList<string> texts)
     {
-        this.log.Log(LogLevel.Debug, "[UI Inspector] ExtractName called with " + texts.Count + " texts: " + string.Join(", ", texts.Select(t => $"'{t}'")));
-
         foreach (var text in texts)
         {
             var candidate = ExtractNameCandidate(text);
-            this.log.Log(LogLevel.Debug, $"[UI Inspector] ExtractNameCandidate('{text}') => '{candidate ?? "<null>"}'");
             if (!string.IsNullOrWhiteSpace(candidate))
             {
-                this.log.Log(LogLevel.Debug, $"[UI Inspector] ExtractName returning: '{candidate}'");
                 return candidate;
             }
         }
 
-        this.log.Log(LogLevel.Debug, "[UI Inspector] ExtractName returning null (no valid candidate found)");
         return null;
     }
 
