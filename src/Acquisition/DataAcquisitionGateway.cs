@@ -91,7 +91,10 @@ public sealed class DataAcquisitionGateway
         var changed = this.differ.TryDescribeChange(previous, snapshot, out var reason);
         var previousCount = previous?.Submarines.Count ?? 0;
         var currentCount = snapshot.Submarines.Count;
-        this.log.Log(LogLevel.Trace, $"[Acquisition] SnapshotDiffer result char={snapshot.CharacterId} changed={changed} reason={reason} previousCount={previousCount} currentCount={currentCount}");
+        var characterLabel = !string.IsNullOrWhiteSpace(snapshot.CharacterName) && !string.IsNullOrWhiteSpace(snapshot.WorldName)
+            ? $"{snapshot.CharacterName}@{snapshot.WorldName}"
+            : snapshot.CharacterId.ToString();
+        this.log.Log(LogLevel.Trace, $"[Acquisition] SnapshotDiffer result char={characterLabel} changed={changed} reason={reason} previousCount={previousCount} currentCount={currentCount}");
         if (!changed)
         {
             this.telemetry.RecordSkip(candidate.Source);

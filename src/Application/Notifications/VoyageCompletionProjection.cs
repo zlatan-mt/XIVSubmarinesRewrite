@@ -167,8 +167,11 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     {
         var submarineId = voyage.Id.SubmarineId;
         var arrivalUtc = voyage.Arrival?.ToUniversalTime();
+        var submarineLabel = snapshot.Submarines.FirstOrDefault(s => s.Id == submarineId)?.Name ?? "<unknown>";
+        var hasState = this.forceNotifyStates.TryGetValue(submarineId, out var state);
+        this.log.Log(LogLevel.Trace, $"[Notifications] HandleForceNotify evaluating submarineId={submarineId} label={submarineLabel} arrival={arrivalUtc:O} hasState={hasState}");
 
-        if (!this.forceNotifyStates.TryGetValue(submarineId, out var state))
+        if (!hasState)
         {
             this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:first-detect", null);
             this.EmitForceNotify(snapshot, voyage, submarineId, "first-detect");

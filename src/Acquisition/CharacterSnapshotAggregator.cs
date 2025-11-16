@@ -118,6 +118,9 @@ public sealed class CharacterSnapshotAggregator
                         {
                             var targetId = incoming.Id.IsPending ? kvp.Key : incoming.Id;
                             var merged = MergeSubmarine(kvp.Value, incoming with { Id = targetId });
+                            this.log.Log(LogLevel.Debug, "[Acquisition] Name-based ID resolution " +
+                                $"incomingId={incoming.Id} matchedName={incoming.Name ?? "<unknown>"} " +
+                                $"existingId={kvp.Key} targetId={targetId}");
                             this.submarines.Remove(kvp.Key);
                             this.submarines[targetId] = merged with { Id = targetId };
                             return;
