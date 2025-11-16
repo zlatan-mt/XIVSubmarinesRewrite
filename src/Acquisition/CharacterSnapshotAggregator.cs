@@ -1,14 +1,26 @@
+// apps/XIVSubmarinesRewrite/src/Acquisition/CharacterSnapshotAggregator.cs
+// キャラクター単位でスナップショット候補を集約し、マージ処理を適用します
+// データソース間の差異を吸収し、差分検知の安定性を保つために存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Acquisition/DataAcquisitionGateway.cs, apps/XIVSubmarinesRewrite/src/Acquisition/SnapshotDiffer.cs
+
 namespace XIVSubmarinesRewrite.Acquisition;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
 
 /// <summary>Aggregates snapshot candidates per character and applies merge policies.</summary>
 public sealed class CharacterSnapshotAggregator
 {
     private readonly Dictionary<ulong, AggregatedState> states = new ();
+    private readonly ILogSink log;
+
+    public CharacterSnapshotAggregator(ILogSink? log = null)
+    {
+        this.log = log ?? new NullLogSink();
+    }
 
     public AcquisitionSnapshot Integrate(AcquisitionSnapshot candidate)
     {
@@ -19,7 +31,7 @@ public sealed class CharacterSnapshotAggregator
 
         if (!this.states.TryGetValue(candidate.CharacterId, out var state))
         {
-            state = new AggregatedState(candidate.CharacterId);
+            state = new AggregatedState(candidate.CharacterId, this.log);
             this.states.Add(candidate.CharacterId, state);
         }
 
@@ -31,6 +43,7 @@ public sealed class CharacterSnapshotAggregator
     {
         private readonly ulong characterId;
         private readonly Dictionary<SubmarineId, Submarine> submarines = new ();
+        private readonly ILogSink log;
         private string? name;
         private string? world;
         private DateTime lastUpdated;
@@ -38,9 +51,10 @@ public sealed class CharacterSnapshotAggregator
         private bool sawMemory;
         private bool sawUi;
 
-        public AggregatedState(ulong characterId)
+        public AggregatedState(ulong characterId, ILogSink log)
         {
             this.characterId = characterId;
+            this.log = log;
         }
 
         public void Update(AcquisitionSnapshot snapshot)
@@ -87,28 +101,50 @@ public sealed class CharacterSnapshotAggregator
 
         private void UpsertSubmarine(Submarine incoming)
         {
-            if (this.submarines.TryGetValue(incoming.Id, out var existing))
+            this.LogUpsertEntry(incoming);
+            try
             {
-                this.submarines[incoming.Id] = MergeSubmarine(existing, incoming);
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(incoming.Name))
-            {
-                foreach (var kvp in this.submarines)
+                if (this.submarines.TryGetValue(incoming.Id, out var existing))
                 {
-                    if (string.Equals(kvp.Value.Name, incoming.Name, StringComparison.OrdinalIgnoreCase))
+                    this.submarines[incoming.Id] = MergeSubmarine(existing, incoming);
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(incoming.Name))
+                {
+                    foreach (var kvp in this.submarines)
                     {
-                        var targetId = incoming.Id.IsPending ? kvp.Key : incoming.Id;
-                        var merged = MergeSubmarine(kvp.Value, incoming with { Id = targetId });
-                        this.submarines.Remove(kvp.Key);
-                        this.submarines[targetId] = merged with { Id = targetId };
-                        return;
+                        if (string.Equals(kvp.Value.Name, incoming.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var targetId = incoming.Id.IsPending ? kvp.Key : incoming.Id;
+                            var merged = MergeSubmarine(kvp.Value, incoming with { Id = targetId });
+                            this.submarines.Remove(kvp.Key);
+                            this.submarines[targetId] = merged with { Id = targetId };
+                            return;
+                        }
                     }
                 }
-            }
 
-            this.submarines[incoming.Id] = incoming;
+                this.submarines[incoming.Id] = incoming;
+            }
+            finally
+            {
+                this.LogSubmarineState();
+            }
+        }
+
+        private void LogUpsertEntry(Submarine incoming)
+        {
+            var name = string.IsNullOrWhiteSpace(incoming.Name) ? "<unknown>" : incoming.Name;
+            this.log.Log(LogLevel.Trace, $"[Acquisition] UpsertSubmarine incoming char={this.characterId} id={incoming.Id} pending={incoming.Id.IsPending} name={name} source={this.lastSource} currentCount={this.submarines.Count}");
+        }
+
+        private void LogSubmarineState()
+        {
+            var entries = this.submarines.Count == 0
+                ? "<empty>"
+                : string.Join(", ", this.submarines.Select(kvp => $"{kvp.Key}:{kvp.Value.Name ?? "<unknown>"}"));
+            this.log.Log(LogLevel.Trace, $"[Acquisition] UpsertSubmarine state char={this.characterId} total={this.submarines.Count} entries=[{entries}] source={this.lastSource}");
         }
 
         private static Submarine MergeSubmarine(Submarine baseline, Submarine incoming)

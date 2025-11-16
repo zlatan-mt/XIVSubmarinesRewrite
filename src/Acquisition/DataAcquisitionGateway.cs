@@ -1,3 +1,8 @@
+// apps/XIVSubmarinesRewrite/src/Acquisition/DataAcquisitionGateway.cs
+// 複数データソースからスナップショットを収集し、集約・永続化を調停します
+// 差分の有無やテレメトリ記録を集中管理し、不要な処理を抑制するために存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Acquisition/CharacterSnapshotAggregator.cs, apps/XIVSubmarinesRewrite/src/Acquisition/SnapshotDiffer.cs
+
 namespace XIVSubmarinesRewrite.Acquisition;
 
 using System;
@@ -7,6 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XIVSubmarinesRewrite.Application.Services;
+using XIVSubmarinesRewrite.Infrastructure.Logging;
 
 /// <summary>Coordinates data sources, aggregates snapshots per character, and handles persistence/telemetry.</summary>
 public sealed class DataAcquisitionGateway
@@ -18,6 +24,7 @@ public sealed class DataAcquisitionGateway
     private readonly CharacterSnapshotAggregator aggregator;
     private readonly SnapshotDiffer differ;
     private readonly ICharacterRegistry characterRegistry;
+    private readonly ILogSink log;
 
     public DataAcquisitionGateway(
         IEnumerable<IDataSource> dataSources,
@@ -26,7 +33,8 @@ public sealed class DataAcquisitionGateway
         SnapshotPersister persister,
         CharacterSnapshotAggregator aggregator,
         SnapshotDiffer differ,
-        ICharacterRegistry characterRegistry)
+        ICharacterRegistry characterRegistry,
+        ILogSink log)
     {
         this.dataSources = dataSources.ToList();
         this.cache = cache;
@@ -35,6 +43,7 @@ public sealed class DataAcquisitionGateway
         this.aggregator = aggregator;
         this.differ = differ;
         this.characterRegistry = characterRegistry;
+        this.log = log;
     }
 
     public async ValueTask<AcquisitionSnapshot?> RefreshAsync(CancellationToken cancellationToken = default)
@@ -79,7 +88,11 @@ public sealed class DataAcquisitionGateway
     {
         var snapshot = this.aggregator.Integrate(candidate);
         var previous = this.cache.GetSnapshot(snapshot.CharacterId);
-        if (!this.differ.HasMeaningfulChange(previous, snapshot))
+        var changed = this.differ.TryDescribeChange(previous, snapshot, out var reason);
+        var previousCount = previous?.Submarines.Count ?? 0;
+        var currentCount = snapshot.Submarines.Count;
+        this.log.Log(LogLevel.Trace, $"[Acquisition] SnapshotDiffer result char={snapshot.CharacterId} changed={changed} reason={reason} previousCount={previousCount} currentCount={currentCount}");
+        if (!changed)
         {
             this.telemetry.RecordSkip(candidate.Source);
             return previous;

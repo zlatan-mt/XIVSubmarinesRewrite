@@ -195,7 +195,7 @@ public sealed class PluginBootstrapper : IDisposable
         this.Services.RegisterSingleton<IUiSubmarineSnapshotSource>(uiSource);
         this.Services.RegisterSingleton(uiSource);
 
-        var aggregator = new CharacterSnapshotAggregator();
+        var aggregator = new CharacterSnapshotAggregator(this.logSink);
         this.Services.RegisterSingleton(aggregator);
 
         var differ = new SnapshotDiffer();
@@ -207,7 +207,7 @@ public sealed class PluginBootstrapper : IDisposable
             new UiDataSource(uiSource),
         };
 
-        var gateway = new DataAcquisitionGateway(dataSources, cache, telemetry, persister, aggregator, differ, characterRegistry);
+        var gateway = new DataAcquisitionGateway(dataSources, cache, telemetry, persister, aggregator, differ, characterRegistry, this.logSink);
         this.Services.RegisterSingleton(gateway);
 
         foreach (var storedSnapshot in storageService.LoadSnapshots())

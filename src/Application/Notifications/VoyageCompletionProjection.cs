@@ -170,6 +170,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
 
         if (!this.forceNotifyStates.TryGetValue(submarineId, out var state))
         {
+            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:first-detect", null);
             this.EmitForceNotify(snapshot, voyage, submarineId, "first-detect");
             return;
         }
@@ -178,12 +179,14 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var arrivalChanged = arrivalUtc.HasValue && (!state.LastArrivalUtc.HasValue || state.LastArrivalUtc.Value != arrivalUtc.Value);
         if (arrivalChanged)
         {
+            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:arrival-changed", state);
             this.EmitForceNotify(snapshot, voyage, submarineId, "arrival-changed");
             return;
         }
 
         if (now >= state.CooldownUntilUtc)
         {
+            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:cooldown-expired", state);
             this.EmitForceNotify(snapshot, voyage, submarineId, "cooldown-expired");
             return;
         }
@@ -191,10 +194,12 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var remaining = state.CooldownUntilUtc - now;
         if (remaining <= TimeSpan.Zero)
         {
+            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "skip:cooldown-elapsed", state);
             return;
         }
 
         var remainingWholeMinutes = Math.Max(0, (int)Math.Ceiling(remaining.TotalMinutes));
+        this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, $"skip:cooldown-{remainingWholeMinutes}m", state);
         if (!state.LastLoggedWholeMinutes.HasValue || remainingWholeMinutes < state.LastLoggedWholeMinutes.Value)
         {
             this.log.Log(LogLevel.Trace, $"[Notifications] ForceNotifyUnderway skipping submarine {submarineId}; cooldown {remainingWholeMinutes}m remaining.");
@@ -224,4 +229,12 @@ public sealed partial class VoyageCompletionProjection
 {
     private static bool AreArrivalsClose(DateTime firstUtc, DateTime secondUtc)
         => (firstUtc - secondUtc).Duration() <= CompletedArrivalDuplicateTolerance;
+
+    private void LogForceNotifyEvaluation(SubmarineId submarineId, Voyage voyage, DateTime? arrivalUtc, string decision, ForceNotifyState? priorState)
+    {
+        var arrival = arrivalUtc?.ToString("O") ?? "null";
+        var previousReason = priorState?.Reason ?? "none";
+        var cooldown = priorState?.CooldownUntilUtc.ToString("O") ?? "n/a";
+        this.log.Log(LogLevel.Trace, $"[Notifications] ForceNotify evaluate submarine={submarineId} voyage={voyage.Id} arrivalUtc={arrival} decision={decision} priorReason={previousReason} cooldownUntil={cooldown}");
+    }
 }
