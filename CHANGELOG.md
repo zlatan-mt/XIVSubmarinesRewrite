@@ -14,6 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.5] - 2025-11-18
+
+### Changed
+
+- **本番ログの静穏化（継続）**: v1.2.3 の方針に沿って、7箇所の `Information` ログを `Debug` レベルに変更し、通常運用時のログノイズを大幅に削減しました。
+  - Discord 集約完了ログ (`DiscordCycleNotificationAggregator.cs:212`) → Debug（重複検出は既存の Warning ログで担保）
+  - Discord バッチ処理ログ (`DiscordNotificationBatcher.cs:43, 176`) → Debug（性能計測ログは開発時のみ必要）
+  - Notion 送信成功ログ (`NotionWebhookClient.cs:82`) → Debug（正常系の高頻度ログ）
+  - プラグイン初期化ログ (`Plugin.cs:52`) → Debug（開発者向けデバッグ情報）
+  - UI リスナー登録ログ (`DalamudUiSubmarineSnapshotSource.Lifecycle.cs:68, 139`) → Debug（起動時の開発者向け情報）
+
+### Technical Details
+
+- 整合性監視（重複検出）は `DiscordCycleNotificationAggregator.cs:171` の `LogLevel.Warning` で引き続き維持されます。
+- 関連ユニットテストのログレベル検証を `Debug` に更新（`NotionWebhookContractTests`, `DiscordCycleNotificationAggregatorTests`）。
+- 詳細な分析レポート: `log_analysis_report_v1.2.4.md`
+
 ## [1.2.4] - 2025-11-16
 
 ### Fixed

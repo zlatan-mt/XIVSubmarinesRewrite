@@ -7,7 +7,7 @@
   "ApplicableVersion": "any",
   "DalamudApiLevel": 13,
   "AssemblyName": "XIVSubmarinesRewrite.dll",
-  "AssemblyVersion": "1.2.4",
+  "AssemblyVersion": "1.2.5",
   "Tags": [
     "rewrite",
     "wip"

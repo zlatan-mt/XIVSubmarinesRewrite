@@ -15,6 +15,6 @@
   "ImageUrls": [
     "https://raw.githubusercontent.com/zlatan-mt/XIVSubmarinesRewrite/main/icon.png"
   ],
-  "Changelog": "1.2.4: Fixed UI filtering that excluded return-state submarines.",
-  "AssemblyVersion": "1.2.4"
+  "Changelog": "1.2.5: Reduced log noise by moving 7 Information logs to Debug level.",
+  "AssemblyVersion": "1.2.5"
 }
