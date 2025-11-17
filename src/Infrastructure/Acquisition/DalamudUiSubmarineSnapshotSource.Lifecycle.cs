@@ -65,7 +65,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
                 {
                     this.addonLifecycle.RegisterListener(eventType, addonName, this.lifecycleHandler);
                     this.lifecycleRegistrations.Add((eventType, addonName));
-                    this.log.Log(LogLevel.Information, "[UI Inspector] Registered " + addonName + " lifecycle listener for " + eventType + ".");
+                    this.log.Log(LogLevel.Debug, "[UI Inspector] Registered " + addonName + " lifecycle listener for " + eventType + ".");
                     anySuccess = true;
                 }
                 catch (MissingMethodException)
@@ -136,7 +136,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
                                 this.lifecycleSubscriptions.Add(disposable);
                             }
 
-                            this.log.Log(LogLevel.Information, "[UI Inspector] Registered " + addonName + " lifecycle listener for " + eventType + " via reflection.");
+                            this.log.Log(LogLevel.Debug, "[UI Inspector] Registered " + addonName + " lifecycle listener for " + eventType + " via reflection.");
                             success = true;
                         }
                         catch (TargetInvocationException ex)

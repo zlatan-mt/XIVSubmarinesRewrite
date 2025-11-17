@@ -49,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         var log = new DalamudPluginLogSink(PluginLog);
-        log.Log(LogLevel.Information, "[Plugin] AddonLifecycle type=" + (AddonLifecycle?.GetType().FullName ?? "null"));
+        log.Log(LogLevel.Debug, "[Plugin] AddonLifecycle type=" + (AddonLifecycle?.GetType().FullName ?? "null"));
         var memorySource = new DalamudMemorySubmarineSnapshotSource(ClientState, log);
         var uiSource = new DalamudUiSubmarineSnapshotSource(AddonLifecycle, GameGui, ClientState, log);
         this.bootstrapper = new PluginBootstrapper(ClientState, memorySource, uiSource, log, Framework, PluginInterface, DataManager);

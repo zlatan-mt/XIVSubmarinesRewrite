@@ -79,7 +79,7 @@ public sealed class NotionWebhookClient : INotionClient
         }
 
         this.log.Log(
-            LogLevel.Information,
+            LogLevel.Debug,
             $"[Notifications] Notion webhook dispatched character={notification.CharacterLabel} submarine={notification.SubmarineLabel} hash={notification.HashKeyShort} timestamp={DateTime.UtcNow:O}.");
     }
 }

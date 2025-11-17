@@ -48,7 +48,7 @@ public sealed class NotionWebhookContractTests
         Assert.True(handler.WasInvoked);
         Assert.Equal(new Uri("https://example.test/webhook"), handler.RequestUri);
         Assert.Equal(HttpMethod.Post, handler.Method);
-        Assert.Contains(log.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains("Notion webhook dispatched", StringComparison.Ordinal));
+        Assert.Contains(log.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains("Notion webhook dispatched", StringComparison.Ordinal));
 
         using var document = JsonDocument.Parse(handler.Body ?? throw new InvalidOperationException("Missing body"));
         var root = document.RootElement;
@@ -116,7 +116,7 @@ public sealed class NotionWebhookContractTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         await client.RecordVoyageCompletionAsync(notification, payload, cts.Token);
 
-        Assert.Contains(log.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains("Notion webhook dispatched", StringComparison.Ordinal));
+        Assert.Contains(log.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains("Notion webhook dispatched", StringComparison.Ordinal));
     }
 
     private static VoyageNotification CreateNotification()

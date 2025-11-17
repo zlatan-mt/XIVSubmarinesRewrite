@@ -54,8 +54,8 @@ public sealed class DiscordCycleNotificationAggregatorTests
         Assert.Equal("Character-DEADBEEF", aggregate.CharacterLabel);
         Assert.Equal(4, aggregate.Payload.Fields.Count);
 
-        var infoLogs = log.Entries.Where(e => e.Level == LogLevel.Information).ToList();
-        Assert.Contains(infoLogs, entry => entry.Message.Contains("flushing cycle", StringComparison.Ordinal));
+        var debugLogs = log.Entries.Where(e => e.Level == LogLevel.Debug).ToList();
+        Assert.Contains(debugLogs, entry => entry.Message.Contains("flushing cycle", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class DiscordCycleNotificationAggregatorTests
         Assert.False(secondCycleDecision.IsSuppressed);
         Assert.NotNull(secondCycleDecision.Aggregate);
 
-        var flushLogs = log.Entries.Count(entry => entry.Level == LogLevel.Information && entry.Message.Contains("flushing cycle", StringComparison.Ordinal));
+        var flushLogs = log.Entries.Count(entry => entry.Level == LogLevel.Debug && entry.Message.Contains("flushing cycle", StringComparison.Ordinal));
         Assert.Equal(2, flushLogs);
     }
 

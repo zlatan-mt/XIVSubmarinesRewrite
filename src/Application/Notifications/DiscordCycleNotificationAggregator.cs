@@ -209,7 +209,7 @@ public sealed class DiscordCycleNotificationAggregator
 
         var payload = this.formatter.CreateDiscordBatchPayload(VoyageStatus.Underway, aggregate[0].CharacterLabel, aggregate);
         var latestArrival = aggregate[^1].ArrivalUtc;
-        this.log.Log(LogLevel.Information,
+        this.log.Log(LogLevel.Debug,
             $"[Notifications] Discord aggregator flushing cycle reason={reason} character={aggregate[0].CharacterLabel} " +
             $"submarines={aggregate.Length} uniqueSubmarineIds={uniqueSubmarineIds} latestArrival={latestArrival:O}.");
         

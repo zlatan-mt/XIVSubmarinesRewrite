@@ -40,7 +40,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
         }
 
         this.log.Log(
-            LogLevel.Information,
+            LogLevel.Debug,
             $"[Notifications] Discord batch window updated windowMs={this.batchWindow.TotalMilliseconds:F0}.");
     }
 
@@ -173,7 +173,7 @@ public sealed class DiscordNotificationBatcher : IDisposable
             var overshootMs = ageMs - windowMs;
             // 実測した滞留時間を残して、窓調整の判断材料にします。
             this.log.Log(
-                LogLevel.Information,
+                LogLevel.Debug,
                 $"[Notifications] Discord batch flush character={state.CharacterLabel} count={uniqueItems.Count} ageMs={ageMs:F0} scheduledWindowMs={windowMs:F0} overshootMs={overshootMs:F0}.");
             await this.discordClient.SendVoyageBatchAsync(ordered[0].CharacterLabel, payload, latestArrival, cancellationToken).ConfigureAwait(false);
         }
