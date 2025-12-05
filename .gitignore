@@ -46,6 +46,8 @@ store/
 
 # Backups and work-in-progress
 *.backup
+*.backup.txt
+*-backup.txt
 .cc-sdd.backup/
 pre-sdd-state.txt
 discord.plan.md
