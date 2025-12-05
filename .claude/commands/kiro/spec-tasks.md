@@ -1,7 +1,7 @@
 ---
 description: Generate implementation tasks for a specification
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep
-argument-hint: <feature-name> [-y]
+argument-hint: <feature-name> [-y] [--sequential]
 ---
 
 # Implementation Tasks Generator
@@ -24,31 +24,37 @@ Generate implementation tasks for feature **$1** based on approved requirements 
 ### Step 1: Load Context
 
 **Read all necessary context**:
-- `plans/specs/specs/$1/spec.json`, `requirements.md`, `design.md`
-- `plans/specs/specs/$1/tasks.md` (if exists, for merge mode)
-- **Entire `plans/specs/steering/` directory** for complete project memory
+- `.kiro/specs/$1/spec.json`, `requirements.md`, `design.md`
+- `.kiro/specs/$1/tasks.md` (if exists, for merge mode)
+- **Entire `.kiro/steering/` directory** for complete project memory
 
 **Validate approvals**:
 - If `-y` flag provided ($2 == "-y"): Auto-approve requirements and design in spec.json
 - Otherwise: Verify both approved (stop if not, see Safety & Fallback)
+- Determine sequential mode based on presence of `--sequential`
 
 ### Step 2: Generate Implementation Tasks
 
 **Load generation rules and template**:
-- Read `plans/specs/settings/rules/tasks-generation.md` for principles
-- Read `plans/specs/settings/templates/specs/tasks.md` for format
+- Read `.kiro/settings/rules/tasks-generation.md` for principles
+- If `sequential` is **false**: Read `.kiro/settings/rules/tasks-parallel-analysis.md` for parallel judgement criteria
+- Read `.kiro/settings/templates/specs/tasks.md` for format (supports `(P)` markers)
 
 **Generate task list following all rules**:
 - Use language specified in spec.json
 - Map all requirements to tasks
+- When documenting requirement coverage, list numeric requirement IDs only (comma-separated) without descriptive suffixes, parentheses, translations, or free-form labels
 - Ensure all design components included
 - Verify task progression is logical and incremental
+- Collapse single-subtask structures by promoting them to major tasks and avoid duplicating details on container-only major tasks (use template patterns accordingly)
+- Apply `(P)` markers to tasks that satisfy parallel criteria (omit markers in sequential mode)
+- Mark optional test coverage subtasks with `- [ ]*` only when they strictly cover acceptance criteria already satisfied by core implementation and can be deferred post-MVP
 - If existing tasks.md found, merge with new content
 
 ### Step 3: Finalize
 
 **Write and update**:
-- Create/update `plans/specs/specs/$1/tasks.md`
+- Create/update `.kiro/specs/$1/tasks.md`
 - Update spec.json metadata:
   - Set `phase: "tasks-generated"`
   - Set `approvals.tasks.generated: true, approved: false`
@@ -73,7 +79,7 @@ Generate implementation tasks for feature **$1** based on approved requirements 
 
 Provide brief summary in the language specified in spec.json:
 
-1. **Status**: Confirm tasks generated at `plans/specs/specs/$1/tasks.md`
+1. **Status**: Confirm tasks generated at `.kiro/specs/$1/tasks.md`
 2. **Task Summary**: 
    - Total: X major tasks, Y sub-tasks
    - All Z requirements covered
@@ -97,7 +103,7 @@ Provide brief summary in the language specified in spec.json:
 
 **Missing Requirements or Design**:
 - **Stop Execution**: Both documents must exist
-- **User Message**: "Missing requirements.md or design.md at `plans/specs/specs/$1/`"
+- **User Message**: "Missing requirements.md or design.md at `.kiro/specs/$1/`"
 - **Suggested Action**: "Complete requirements and design phases first"
 
 **Incomplete Requirements Coverage**:
@@ -105,9 +111,11 @@ Provide brief summary in the language specified in spec.json:
 - **User Action Required**: Confirm intentional gaps or regenerate tasks
 
 **Template/Rules Missing**:
-- **User Message**: "Template or rules files missing in `plans/specs/settings/`"
+- **User Message**: "Template or rules files missing in `.kiro/settings/`"
 - **Fallback**: Use inline basic structure with warning
 - **Suggested Action**: "Check repository setup or restore template files"
+- **Missing Numeric Requirement IDs**:
+  - **Stop Execution**: All requirements in requirements.md MUST have numeric IDs. If any requirement lacks a numeric ID, stop and request that requirements.md be fixed before generating tasks.
 
 ### Next Phase: Implementation
 
@@ -128,4 +136,3 @@ Provide brief summary in the language specified in spec.json:
 **Note**: The implementation phase will guide you through executing tasks with appropriate context and validation.
 
 think
-

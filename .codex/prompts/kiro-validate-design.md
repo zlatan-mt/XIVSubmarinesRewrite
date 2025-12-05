@@ -23,16 +23,16 @@ Interactive design quality review for feature **$1** based on approved requireme
 ## Execution Steps
 
 1. **Load Context**:
-   - Read `plans/specs/specs/$1/spec.json` for language and metadata
-   - Read `plans/specs/specs/$1/requirements.md` for requirements
-   - Read `plans/specs/specs/$1/design.md` for design document
-   - **Load ALL steering context**: Read entire `plans/specs/steering/` directory including:
+   - Read `.kiro/specs/$1/spec.json` for language and metadata
+   - Read `.kiro/specs/$1/requirements.md` for requirements
+   - Read `.kiro/specs/$1/design.md` for design document
+   - **Load ALL steering context**: Read entire `.kiro/steering/` directory including:
      - Default files: `structure.md`, `tech.md`, `product.md`
      - All custom steering files (regardless of mode settings)
      - This provides complete project memory and context
 
 2. **Read Review Guidelines**:
-   - Read `plans/specs/settings/rules/design-review.md` for review criteria and process
+   - Read `.kiro/settings/rules/design-review.md` for review criteria and process
 
 3. **Execute Design Review**:
    - Follow design-review.md process: Analysis → Critical Issues → Strengths → GO/NO-GO
@@ -76,7 +76,7 @@ Provide output in the language specified in spec.json with:
 - **Missing Design**: If design.md doesn't exist, stop with message: "Run `/prompts:kiro-spec-design $1` first to generate design document"
 - **Design Not Generated**: If design phase not marked as generated in spec.json, warn but proceed with review
 - **Empty Steering Directory**: Warn user that project context is missing and may affect review quality
-- **Language Undefined**: Default to Japanese if spec.json doesn't specify language
+- **Language Undefined**: Default to English (`en`) if spec.json doesn't specify language
 
 ### Next Phase: Task Generation
 
@@ -91,4 +91,3 @@ Provide output in the language specified in spec.json with:
 - Re-validate with `/prompts:kiro-validate-design $1`
 
 **Note**: Design validation is recommended but optional. Quality review helps catch issues early.
-
