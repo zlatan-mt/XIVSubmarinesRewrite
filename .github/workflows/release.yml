@@ -10,6 +10,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: windows-latest
@@ -70,10 +73,8 @@ jobs:
           echo "DALAMUD_LIB_PATH=$dalamudDir" >> $env:GITHUB_ENV
           Write-Host "Set DALAMUD_LIB_PATH=$dalamudDir" -ForegroundColor Green
       
-      - name: Add custom NuGet sources
-        run: |
-          dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
-          dotnet nuget list source
+      - name: List NuGet sources
+        run: dotnet nuget list source
       
       - name: Restore dependencies
         run: dotnet restore
