@@ -53,11 +53,5 @@ public sealed class NotificationWebhookValidatorTests
         Assert.Null(result.ErrorMessage);
     }
 
-    [Fact]
-    public void NotionValidator_AllowsHttpsAnyDomain()
-    {
-        var result = NotificationWebhookValidator.ValidateNotion(true, "https://hooks.zapier.com/abc");
-        Assert.True(result.IsValid);
-        Assert.Null(result.ErrorMessage);
-    }
+
 }

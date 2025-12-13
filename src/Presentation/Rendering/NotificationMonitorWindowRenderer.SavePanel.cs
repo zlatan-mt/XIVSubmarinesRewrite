@@ -24,7 +24,7 @@ public sealed partial class NotificationMonitorWindowRenderer
 
         if (!formValid)
         {
-            var message = this.discordUrlError ?? this.notionUrlError ?? "URL を確認してください。";
+            var message = this.discordUrlError ?? "URL を確認してください。";
             ImGui.TextColored(UiTheme.ErrorText, message);
         }
         else
@@ -36,7 +36,6 @@ public sealed partial class NotificationMonitorWindowRenderer
     private bool IsNotificationFormValid()
     {
         var discordOk = !this.editingSettings.EnableDiscord || this.discordUrlValid;
-        var notionOk = !this.editingSettings.EnableNotion || this.notionUrlValid;
-        return discordOk && notionOk;
+        return discordOk;
     }
 }

@@ -93,6 +93,7 @@ public sealed partial class VoyageCompletionProjection
 
 ---
 
+
 ### 2. VoyageNotificationFormatter の変更
 
 **責務**: 簡素化されたDiscordペイロードを生成
@@ -296,8 +297,7 @@ public sealed class NotificationSettings
     // 既存プロパティ
     public bool EnableDiscord { get; set; }
     public string? DiscordWebhookUrl { get; set; }
-    public bool EnableNotion { get; set; }
-    public string? NotionWebhookUrl { get; set; }
+    // 注: EnableNotion, NotionWebhookUrl は v1.3.0 で削除済み
 
     // Deprecated: 読み込むが使用しない
     [Obsolete("Completed notifications are no longer sent")]
@@ -519,6 +519,7 @@ private static string SanitizeReminderMessage(string message)
 
 ---
 
+
 ### FormatRemainingConcise() の実装
 
 ```csharp
@@ -700,6 +701,7 @@ public class VoyageNotificationFormatterTests
 ```
 
 ---
+
 
 ### E2Eテスト
 
@@ -948,4 +950,3 @@ private void ProcessVoyageStateChange(/* ... */)
 **承認状態**: 設計レビュー待ち  
 **関連Phase**: Phase 13候補  
 **次のステップ**: `/kiro:spec-tasks discord-message-optimization`
-

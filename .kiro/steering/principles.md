@@ -95,7 +95,7 @@ public partial class MainWindowRenderer
 - エラーの抑制（`@ts-ignore`、`try-catch` で握りつぶす等）ではなく、根本原因を修正
 - 早期にエラーを検出し、明確なエラーメッセージを提供
 - エラーケースも必ずテストでカバー
-- 外部API（Discord, Notion）は必ず失敗する可能性を考慮
+- 外部API（Discord）は必ず失敗する可能性を考慮
 
 ### 例外処理
 ```csharp

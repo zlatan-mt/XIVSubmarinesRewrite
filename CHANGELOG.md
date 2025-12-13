@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.3.0] - 2025-12-08
+
+### Removed
+
+- **Notion 通知機能の削除**: 利用頻度が低く正常に動作していなかったため、Notion 通知機能を完全に削除しました。
+  - `NotionWebhookClient`, `INotionClient` を削除
+  - UI から Notion 設定カードを削除
+  - 関連テスト・ドキュメントを整理
+
 ## [1.2.5] - 2025-11-18
 
 ### Changed
@@ -185,7 +194,7 @@ _No unreleased changes._
 
 ### Changed
 
-- ForceImmediate 通知経路のデバッグ/トレースログを拡充し、Discord バッチの開始・リセットを追跡しやすくしました。
+- ForceImmediate 経路のデバッグ/トレースログを拡充し、Discord バッチの開始・リセットを追跡しやすくしました。
 
 ### Testing
 
@@ -338,7 +347,14 @@ _No unreleased changes._
 
 ---
 
-[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.1.6...HEAD
+[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.3.0
+[1.2.5]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.5
+[1.2.4]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.4
+[1.2.3]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.3
+[1.2.2]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.2
+[1.2.1]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.1
+[1.2.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.0
 [1.1.6]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.1.6
 [1.1.5]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.1.5
 [1.0.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.0.0

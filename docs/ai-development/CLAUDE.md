@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # XIV Submarines Rewrite - プロジェクトガイド
 
 **プロジェクト**: Final Fantasy XIV Dalamud プラグイン
-**目的**: 潜水艦探索管理の自動化とDiscord/Notion通知連携
-**バージョン**: 1.2.0
+**目的**: 潜水艦探索管理の自動化とDiscord通知連携
+**バージョン**: 1.3.0
 **技術スタック**: .NET 9.0-windows, C# 12, Dalamud API Level 13
 
 ## コマンド早見表
@@ -56,16 +56,16 @@ powershell.exe -Command "Compress-Archive -Path XIVSubmarinesRewrite.dll,XIVSubm
 ```bash
 # ブランチ確認
 git branch -a
-# -> develop: 開発用（全ファイル）
-# -> release: 公開用（クリーン）
-# -> master: repo.json配信専用
+# -> main: 開発兼公開用（タグでリリース）
+# -> feature/*: 機能ブランチ
 
 # 通常の開発フロー
-git checkout develop
+git checkout -b feature/my-feature
 # ... 開発作業 ...
 git add .
 git commit -m "feat: 機能説明"
-git push origin develop
+git push origin feature/my-feature
+# PR作成 -> Squash Merge -> main
 
 # リリースフロー（詳細は後述）
 ```
@@ -90,7 +90,7 @@ Infrastructure (Dalamud API, Storage)
 - **`src/Application/`** - ビジネスロジック、通知システム
 - **`src/Domain/`** - ドメインモデル（Submarine, Voyage等）
 - **`src/Infrastructure/`** - Dalamud API統合、永続化、DI構成
-- **`src/Integrations/`** - 外部サービス連携（Discord/Notion）
+- **`src/Integrations/`** - 外部サービス連携（Discord）
 - **`src/Presentation/`** - ImGui UI レンダリング、ViewModel
 
 ### エントリーポイント
@@ -196,53 +196,34 @@ DiscordCycleNotificationAggregator (4隻集約)
     ↓
 NotificationWorker (バッチング)
     ↓
-DiscordWebhookClient / NotionWebhookClient
+DiscordWebhookClient
 ```
 
 ## ブランチ戦略
 
-- **`develop`** - 開発用（全ファイル、plans/docs含む）
-- **`release`** - 公開用（クリーン構成）
-- **`master`** - Dalamud repo.json配信専用
+- **`main`** - 開発兼公開用（タグでリリース）
+- **`feature/*`** - 機能ブランチ（プッシュ時CI）
 
 ### リリースフロー
 
 ```bash
-# 1. develop でバージョン更新
-git checkout develop
-# CHANGELOG.md, plugin.json, manifest.json を更新
-git add .
-git commit -m "release: vX.Y.Z - 変更概要"
-git tag -a vX.Y.Z -m "リリースノート全文"
+# 1. feature ブランチで作業
+git checkout -b feature/release-vX.Y.Z
+# バージョン更新、CHANGELOG更新など
+git commit -am "release: prepare vX.Y.Z"
+git push origin feature/release-vX.Y.Z
 
-# 2. release にマージ
-git checkout release
-git merge develop --ff-only
-git push origin develop release vX.Y.Z
+# 2. PR 作成 & マージ
+gh pr create --base main
+# (Review & Merge)
 
-# 3. GitHub Release作成
-gh release create vX.Y.Z --title "vX.Y.Z - タイトル" --notes "リリースノート"
-
-# 4. リリースZIPビルド＆アップロード
-dotnet build -c Release
-# ... ZIP作成 ...
-gh release upload vX.Y.Z XIVSubmarinesRewrite-vX.Y.Z.zip
-
-# 5. repo.json更新（master）
-git checkout master
-# repo.json のバージョン、ダウンロードリンク、タイムスタンプを更新
-git add repo.json
-git commit -m "chore: update repo.json to vX.Y.Z"
-git push origin master
-
-# 6. 元のブランチに戻る
-git checkout develop
+# 3. タグ作成 & リリース
+git checkout main
+git pull
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+gh release create vX.Y.Z --generate-notes
 ```
-
-**repo.json更新項目**:
-- `AssemblyVersion`: vX.Y.Z
-- `DownloadLinkInstall/Update`: GitHub Release ZIPのURL
-- `LastUpdate`: Unixタイムスタンプ（`date +%s`）
 
 ## 依存関係
 
@@ -328,11 +309,11 @@ pwsh tools/DalamudRestore/restore.ps1
 
 ## 参考リンク
 
-- **プロジェクトメモリ**: `plans/specs/steering/` (develop ブランチ)
-- **AI開発ガイド**: `docs/ai-development/` (develop ブランチ)
-- **リリース手順**: `docs/release/` (develop ブランチ)
+- **プロジェクトメモリ**: `plans/specs/steering/` (main ブランチ)
+- **AI開発ガイド**: `docs/ai-development/` (main ブランチ)
+- **リリース手順**: `docs/release/` (main ブランチ)
 - **Dalamud Docs**: https://goatcorp.github.io/Dalamud/
 
 ---
 
-**このファイルはdevelopブランチで管理されています。releaseブランチには含まれません。**
+**このファイルはmainブランチで管理されています。**

@@ -12,7 +12,7 @@ v1.2.4のログ出力が過剰であるとの指摘を受け、ログの内容�
 | :--- | :--- | :--- | :--- |
 | **A. 冗長な監視ログ** | `src/Application/Notifications/DiscordCycleNotificationAggregator.cs:212` | 4隻サイクルの集約完了ログ。 | **`Debug`レベルに変更。** 整合性監視（重複検出）は、同ファイル内の162-176行目で`LogLevel.Warning`の専用ログとして既に実装済み。本ログは正常時も毎回出力される高頻度ノイズであり、`Information`レベルで維持する技術的合理性はない。 |
 | **B. 性能計測** | `src/Application/Notifications/DiscordNotificationBatcher.cs:176` | バッチ処理の滞留時間 (`ageMs`) や遅延 (`overshootMs`) を含むフラッシュログ。 | **`Debug`レベルに変更。** 過去の性能問題解決に直接役立った明確な実績がないため。 |
-| **C. 高頻度・運用** | `src/Integrations/Notifications/NotionWebhookClient.cs:82` | Notion Webhookの送信成功ログ。 | **`Debug`レベルに変更。** 正常系の高頻度ログであり、通常運用ではノイズとなる。 |
+| **C. 高頻度・運用** | ~~`src/Integrations/Notifications/NotionWebhookClient.cs:82`~~ | ~~Notion Webhookの送信成功ログ。~~ | **削除済み。** Notion通知機能自体がv1.3.0で削除されたため。 |
 | **D. デバッグ専用** | `src/Plugin.cs:52` | `AddonLifecycle`の型情報を出力するログ。 | **`Debug`レベルに変更。** 開発者向けの純粋なデバッグ情報。 |
 | | `src/Infrastructure/Acquisition/DalamudUiSubmarineSnapshotSource.Lifecycle.cs:68, 139` | UIイベントリスナー登録の成功ログ。 | **`Debug`レベルに変更。** プラグイン起動時の開発者向け情報。 |
 | | `src/Application/Notifications/DiscordNotificationBatcher.cs:43` | バッチウィンドウ更新ログ。 | **`Debug`レベルに変更。** 設定変更時のデバッグ情報。 |
@@ -34,8 +34,8 @@ v1.2.4のログ出力が過剰であるとの指摘を受け、ログの内容�
     - `LogLevel.Information` → `LogLevel.Debug`
 - [ ] `src/Application/Notifications/DiscordNotificationBatcher.cs:176`
     - `LogLevel.Information` → `LogLevel.Debug`
-- [ ] `src/Integrations/Notifications/NotionWebhookClient.cs:82`
-    - `LogLevel.Information` → `LogLevel.Debug`
+- [x] `src/Integrations/Notifications/NotionWebhookClient.cs:82`
+    - **削除済み** (v1.3.0)
 - [ ] `src/Plugin.cs:52`
     - `LogLevel.Information` → `LogLevel.Debug`
 - [ ] `src/Infrastructure/Acquisition/DalamudUiSubmarineSnapshotSource.Lifecycle.cs:68`
@@ -46,8 +46,8 @@ v1.2.4のログ出力が過剰であるとの指摘を受け、ログの内容�
     - `LogLevel.Information` → `LogLevel.Debug`
 
 ##### **テスト修正**
-- [ ] `tests/XIVSubmarinesRewrite.Tests/NotionWebhookContractTests.cs:51, 119`
-    - **修正方針:** `LogLevel.Information` を期待しているアサーションを `LogLevel.Debug` に変更します。
+- [x] `tests/XIVSubmarinesRewrite.Tests/NotionWebhookContractTests.cs:51, 119`
+    - **削除済み** (v1.3.0)
 - [ ] `tests/XIVSubmarinesRewrite.Tests/DiscordCycleNotificationAggregatorTests.cs:57, 78`
     - **修正方針:** `LogLevel.Information` を期待しているアサーションを `LogLevel.Debug` に変更、またはログ内容の検証が主目的であればレベル検証部分を削除します。
 

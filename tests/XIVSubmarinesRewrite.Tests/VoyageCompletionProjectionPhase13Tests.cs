@@ -2,6 +2,8 @@ namespace XIVSubmarinesRewrite.Tests;
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using XIVSubmarinesRewrite.Acquisition;
 using XIVSubmarinesRewrite.Application.Notifications;
@@ -45,7 +47,7 @@ public class VoyageCompletionProjectionPhase13Tests
             status: VoyageStatus.Underway,
             arrival: DateTime.UtcNow.AddHours(12)
         );
-        cache.UpdateSnapshot(1, initialSnapshot);
+        cache.Update(initialSnapshot, 1);
 
         // Act: Completed状態に変更
         var completedSnapshot = CreateSnapshot(
@@ -54,7 +56,7 @@ public class VoyageCompletionProjectionPhase13Tests
             status: VoyageStatus.Completed,
             arrival: DateTime.UtcNow
         );
-        cache.UpdateSnapshot(1, completedSnapshot);
+        cache.Update(completedSnapshot, 1);
 
         // Assert: Completed通知は送信されない
         Assert.Empty(queue.EnqueuedNotifications);
@@ -88,7 +90,7 @@ public class VoyageCompletionProjectionPhase13Tests
             status: VoyageStatus.Underway,
             arrival: DateTime.UtcNow.AddHours(12)
         );
-        cache.UpdateSnapshot(1, underwaySnapshot);
+        cache.Update(underwaySnapshot, 1);
 
         // Assert: Underway通知は送信される
         Assert.NotEmpty(queue.EnqueuedNotifications);
@@ -107,7 +109,7 @@ public class VoyageCompletionProjectionPhase13Tests
         var cache = new SnapshotCache();
         var characterRegistry = new TestCharacterRegistry();
         var log = new NullLogSink();
-        
+
         var projection = new VoyageCompletionProjection(
             cache,
             queue,
@@ -118,19 +120,19 @@ public class VoyageCompletionProjectionPhase13Tests
 
         // 初期: Underway
         var initialSnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
-        cache.UpdateSnapshot(1, initialSnapshot);
+        cache.Update(initialSnapshot, 1);
         queue.Clear();
 
         // Act 1: Completed状態に変更
         var completedSnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Completed, DateTime.UtcNow);
-        cache.UpdateSnapshot(1, completedSnapshot);
+        cache.Update(completedSnapshot, 1);
 
         // Assert 1: Completed通知は送信されない
         Assert.Empty(queue.EnqueuedNotifications);
 
         // Act 2: 次のUnderway状態
         var nextUnderwaySnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
-        cache.UpdateSnapshot(1, nextUnderwaySnapshot);
+        cache.Update(nextUnderwaySnapshot, 1);
 
         // Assert 2: Underway通知のみ送信される
         Assert.Single(queue.EnqueuedNotifications);
@@ -143,27 +145,30 @@ public class VoyageCompletionProjectionPhase13Tests
         VoyageStatus status,
         DateTime arrival)
     {
+        var departure = DateTime.UtcNow.AddHours(-12);
         var voyage = new Voyage(
-            new VoyageId(submarineId, 1),
-            status,
-            DateTime.UtcNow.AddHours(-12),
+            VoyageId.Create(submarineId, Guid.NewGuid()),
+            "Route-1",
+            departure,
             arrival,
-            "Route-1"
+            status
         );
 
         var submarine = new Submarine(
             submarineId,
-            $"Sub-{submarineId.SlotIndex}",
+            $"Sub-{submarineId.Slot}",
+            "profile-1",
             new[] { voyage }
         );
 
         return new AcquisitionSnapshot(
+            DateTime.UtcNow,
+            new[] { submarine },
+            AcquisitionSourceKind.Composite,
             characterId,
             $"Character-{characterId}",
             $"World-{characterId}",
-            new[] { submarine },
-            AcquisitionConfidence.High,
-            DateTime.UtcNow
+            SnapshotConfidence.Merged
         );
     }
 
@@ -180,30 +185,43 @@ public class VoyageCompletionProjectionPhase13Tests
 
         public void Clear() => EnqueuedNotifications.Clear();
 
-        public IReadOnlyList<NotificationWorkItemSnapshot> GetPendingSnapshots() => 
+        public ValueTask<NotificationWorkItem?> DequeueAsync(CancellationToken cancellationToken) =>
+            new((NotificationWorkItem?)null);
+
+        public void ReportSuccess(NotificationWorkItem item) { }
+
+        public NotificationDeliveryState ReportFailure(NotificationWorkItem item, Exception error, TimeSpan? overrideDelay = null) =>
+            NotificationDeliveryState.DeadLetter;
+
+        public IReadOnlyCollection<NotificationWorkItemSnapshot> GetPending() =>
             Array.Empty<NotificationWorkItemSnapshot>();
 
-        public IReadOnlyList<NotificationWorkItemSnapshot> GetDeadLetterSnapshots() => 
+        public IReadOnlyCollection<NotificationWorkItemSnapshot> GetDeadLetters() =>
             Array.Empty<NotificationWorkItemSnapshot>();
 
-        public bool TryRequeue(string hashKey) => false;
+        public bool TryRequeueDeadLetter(string hashKey) => false;
     }
 
     // テスト用キャラクターレジストリ
     private class TestCharacterRegistry : ICharacterRegistry
     {
-        public ulong ActiveCharacterId => 1;
+        public event EventHandler<CharacterChangedEventArgs>? ActiveCharacterChanged;
+        public event EventHandler? CharacterListChanged;
 
-        public CharacterIdentity? GetIdentity(ulong characterId) => 
+        public ulong ActiveCharacterId => 1;
+        public IReadOnlyList<CharacterDescriptor> Characters => Array.Empty<CharacterDescriptor>();
+
+        public CharacterIdentity? GetIdentity(ulong characterId) =>
             new CharacterIdentity(characterId, $"Character-{characterId}", $"World-{characterId}");
 
         public void RegisterSnapshot(AcquisitionSnapshot snapshot) { }
 
-        public IReadOnlyList<CharacterIdentity> GetAllIdentities() => 
-            Array.Empty<CharacterIdentity>();
+        public void SelectCharacter(ulong characterId) { }
 
-        public IReadOnlyList<ulong> GetCharactersWithSubmarineOperations() => 
-            Array.Empty<ulong>();
+        public DateTime? GetLastUpdatedUtc(ulong characterId) => null;
+
+        public IReadOnlyList<CharacterDescriptor> GetCharactersWithSubmarineOperations() =>
+            Array.Empty<CharacterDescriptor>();
 
         public void CleanupCharactersWithoutSubmarineOperations() { }
     }

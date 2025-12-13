@@ -1,4 +1,6 @@
-# AI-DLC and Spec-Driven Development
+英語で think して、日本語で output してください。
+
+#AI-DLC and Spec-Driven Development
 
 Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life Cycle)
 

@@ -10,11 +10,6 @@ public sealed class NotificationSettings
     public string? DiscordWebhookUrl { get; set; }
         = string.Empty;
 
-    public bool EnableNotion { get; set; } = false;
-
-    public string? NotionWebhookUrl { get; set; }
-        = string.Empty;
-
     public double DiscordBatchWindowSeconds { get; set; } = 1.5;
 
     public int DeadLetterRetentionLimit { get; set; } = 64;

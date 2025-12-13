@@ -9,6 +9,7 @@ using System.Linq;
 using XIVSubmarinesRewrite.Acquisition;
 using XIVSubmarinesRewrite.Application.Notifications;
 using XIVSubmarinesRewrite.Domain.Models;
+using XIVSubmarinesRewrite.Infrastructure.Configuration;
 using XIVSubmarinesRewrite.Infrastructure.Logging;
 using Xunit;
 
@@ -18,7 +19,7 @@ public sealed class DiscordCycleNotificationAggregatorTests
     public void Process_FlushesSingleDiscordBatchAfterCompleteCycle()
     {
         var log = new FakeLogSink();
-        var formatter = new VoyageNotificationFormatter();
+        var formatter = new VoyageNotificationFormatter(new NotificationSettings());
         var aggregator = new DiscordCycleNotificationAggregator(formatter, log);
         var characterId = 0xDEADBEEF;
         var baseArrival = DateTime.UtcNow;
@@ -62,7 +63,7 @@ public sealed class DiscordCycleNotificationAggregatorTests
     public void Process_AllowsSecondCycleAfterReset()
     {
         var log = new FakeLogSink();
-        var formatter = new VoyageNotificationFormatter();
+        var formatter = new VoyageNotificationFormatter(new NotificationSettings());
         var aggregator = new DiscordCycleNotificationAggregator(formatter, log);
         var characterId = 0xC0FFEEUL;
         var firstCycleDecision = RunFullCycle(aggregator, characterId, DateTime.UtcNow);

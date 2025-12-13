@@ -1,6 +1,6 @@
 // apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.ChannelCards.cs
 // 通知チャネルカードの描画と URL バリデーションを担当します
-// Discord / Notion 設定を共通処理へ集約し、保存前に入力チェックを行うため存在します
+// Discord 設定を共通処理へ集約し、保存前に入力チェックを行うため存在します
 // RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.cs, apps/XIVSubmarinesRewrite/src/Presentation/Rendering/NotificationMonitorWindowRenderer.SettingsLayout.cs
 
 namespace XIVSubmarinesRewrite.Presentation.Rendering;
@@ -20,7 +20,6 @@ public sealed partial class NotificationMonitorWindowRenderer
     private enum NotificationChannel
     {
         Discord,
-        Notion,
     }
 
     private readonly struct ChannelCardResult
@@ -39,7 +38,7 @@ public sealed partial class NotificationMonitorWindowRenderer
         public string? ErrorMessage { get; }
     }
 
-    private bool RenderChannelCards(in NotificationLayoutMetrics metrics, ref bool discordEnabled, ref bool notionEnabled)
+    private bool RenderChannelCards(in NotificationLayoutMetrics metrics, ref bool discordEnabled)
     {
         var changed = false;
         const ImGuiTableFlags flags = ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoSavedSettings;
@@ -49,7 +48,7 @@ public sealed partial class NotificationMonitorWindowRenderer
             return false;
         }
 
-        var totalChannels = 2;
+        var totalChannels = 1;
         for (var index = 0; index < totalChannels; index++)
         {
             if (index % columns == 0)
@@ -72,14 +71,6 @@ public sealed partial class NotificationMonitorWindowRenderer
                 this.discordUrlValid = result.IsValid;
                 this.discordUrlError = result.ErrorMessage;
             }
-            else
-            {
-                var result = this.RenderChannelCard(NotificationChannel.Notion, ref notionEnabled, this.notionUrlBuffer, value => this.editingSettings.NotionWebhookUrl = value, metrics.CardHeight);
-                changed |= result.Changed;
-                notionEnabled = result.Enabled;
-                this.notionUrlValid = result.IsValid;
-                this.notionUrlError = result.ErrorMessage;
-            }
         }
 
         ImGui.EndTable();
@@ -89,8 +80,8 @@ public sealed partial class NotificationMonitorWindowRenderer
     private ChannelCardResult RenderChannelCard(NotificationChannel channel, ref bool enabled, byte[] buffer, Action<string> setter, float preferredHeight)
     {
         var changed = false;
-        var id = channel == NotificationChannel.Discord ? "discord" : "notion";
-        var title = channel == NotificationChannel.Discord ? "Discord" : "Notion";
+        var id = "discord";
+        var title = "Discord";
 
         ImGui.PushID(id);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8f, 6f));
@@ -117,9 +108,7 @@ public sealed partial class NotificationMonitorWindowRenderer
             ImGui.PopItemWidth();
 
             var urlText = ExtractString(buffer);
-            var validation = channel == NotificationChannel.Discord
-                ? NotificationWebhookValidator.ValidateDiscord(enabled, urlText)
-                : NotificationWebhookValidator.ValidateNotion(enabled, urlText);
+            var validation = NotificationWebhookValidator.ValidateDiscord(enabled, urlText);
             isValid = validation.IsValid;
             errorMessage = validation.ErrorMessage;
             if (!isValid)
@@ -130,9 +119,7 @@ public sealed partial class NotificationMonitorWindowRenderer
         else
         {
             var urlText = ExtractString(buffer);
-            var validation = channel == NotificationChannel.Discord
-                ? NotificationWebhookValidator.ValidateDiscord(enabled, urlText)
-                : NotificationWebhookValidator.ValidateNotion(enabled, urlText);
+            var validation = NotificationWebhookValidator.ValidateDiscord(enabled, urlText);
             isValid = validation.IsValid;
             errorMessage = validation.ErrorMessage;
         }
@@ -161,11 +148,6 @@ public sealed partial class NotificationMonitorWindowRenderer
         var discordValidation = NotificationWebhookValidator.ValidateDiscord(this.editingSettings.EnableDiscord, discord);
         this.discordUrlValid = discordValidation.IsValid;
         this.discordUrlError = discordValidation.ErrorMessage;
-
-        var notion = ExtractString(this.notionUrlBuffer);
-        var notionValidation = NotificationWebhookValidator.ValidateNotion(this.editingSettings.EnableNotion, notion);
-        this.notionUrlValid = notionValidation.IsValid;
-        this.notionUrlError = notionValidation.ErrorMessage;
     }
 }
 
@@ -186,9 +168,6 @@ internal static class NotificationWebhookValidator
 {
     public static NotificationChannelValidationResult ValidateDiscord(bool enabled, string url)
         => Validate(enabled, url, requireDiscordDomain: true);
-
-    public static NotificationChannelValidationResult ValidateNotion(bool enabled, string url)
-        => Validate(enabled, url, requireDiscordDomain: false);
 
     private static NotificationChannelValidationResult Validate(bool enabled, string url, bool requireDiscordDomain)
     {

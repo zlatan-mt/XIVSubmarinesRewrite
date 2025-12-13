@@ -79,33 +79,6 @@ public sealed class VoyageNotificationFormatter
             Footer: null);
     }
 
-    public NotionNotificationPayload CreateNotionPayload(VoyageNotification notification)
-    {
-        var properties = new Dictionary<string, string?>(StringComparer.Ordinal)
-        {
-            ["Character"] = notification.CharacterLabel,
-            ["Submarine"] = notification.SubmarineLabel,
-            ["Route"] = notification.RouteId,
-            ["DepartureUtc"] = FormatIso(notification.DepartureUtc),
-            ["ArrivalUtc"] = notification.ArrivalUtc.ToString("O", CultureInfo.InvariantCulture),
-            ["Duration"] = FormatDuration(notification.Duration),
-            ["Status"] = notification.Status.ToString(),
-            ["Confidence"] = notification.Confidence.ToString(),
-            ["Hash"] = notification.HashKey,
-            ["Remaining"] = FormatRemaining(notification),
-        };
-
-        var routeDisplay = NormalizeRouteDisplay(notification.RouteDisplay, notification.RouteId);
-        if (!string.IsNullOrEmpty(routeDisplay))
-        {
-            properties["RouteDisplay"] = routeDisplay;
-        }
-
-        properties["ArrivalLocal"] = notification.ArrivalLocal.ToString("O", CultureInfo.InvariantCulture);
-
-        return new NotionNotificationPayload(properties);
-    }
-
     public DiscordNotificationPayload CreateDiscordBatchPayload(Domain.Models.VoyageStatus status, string characterLabel, IReadOnlyList<VoyageNotification> notifications)
     {
         if (notifications.Count == 0)
@@ -424,7 +397,7 @@ public sealed class VoyageNotificationFormatter
         return sanitized.Trim();
     }
 
-    // Notion 側で空欄になるのを避けるため、表示用の航路文字列を整えます。
+    // 表示用の航路文字列を整えます。
     private static string? NormalizeRouteDisplay(string? routeDisplay, string? routeId)
     {
         if (string.IsNullOrWhiteSpace(routeDisplay))
@@ -447,5 +420,3 @@ public sealed record DiscordNotificationPayload(
     string? Footer);
 
 public sealed record DiscordNotificationField(string Name, string Value, bool Inline);
-
-public sealed record NotionNotificationPayload(IReadOnlyDictionary<string, string?> Properties);

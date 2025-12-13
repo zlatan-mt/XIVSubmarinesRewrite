@@ -41,15 +41,12 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
     private NotificationSettings editingSettings;
     private bool settingsDirty;
     private readonly byte[] discordUrlBuffer = new byte[512];
-    private readonly byte[] notionUrlBuffer = new byte[512];
     private float editingDiscordBatchWindowSeconds;
     private bool isVisible;
     private string? identityToastMessage;
     private DateTime identityToastExpiryUtc;
     private bool discordUrlValid = true;
-    private bool notionUrlValid = true;
     private string? discordUrlError;
-    private string? notionUrlError;
 
     public NotificationMonitorWindowRenderer(
         NotificationQueueViewModel queueViewModel,
@@ -178,11 +175,9 @@ public sealed partial class NotificationMonitorWindowRenderer : IViewRenderer
             this.settingsLayoutDebug = NotificationLayoutDebugSnapshot.Create(metrics);
 
             var discordEnabled = this.editingSettings.EnableDiscord;
-            var notionEnabled = this.editingSettings.EnableNotion;
-            changed |= this.RenderChannelCards(metrics, ref discordEnabled, ref notionEnabled);
+            changed |= this.RenderChannelCards(metrics, ref discordEnabled);
 
             this.editingSettings.EnableDiscord = discordEnabled;
-            this.editingSettings.EnableNotion = notionEnabled;
             var formValid = this.IsNotificationFormValid();
 
             ImGui.Separator();

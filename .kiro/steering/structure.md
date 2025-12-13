@@ -143,8 +143,6 @@ Integrations/
 └── Notifications/
     ├── DiscordNotificationBatcher.cs
     ├── DiscordWebhookContract.cs
-    ├── NotionWebhookClient.cs
-    ├── NotionWebhookContract.cs
     └── NotificationWebhookValidator.cs
 ```
 
@@ -181,7 +179,6 @@ XIVSubmarinesRewrite.Tests/
 ├── DiscordCycleNotificationAggregatorTests.cs
 ├── NotificationCoordinatorForceImmediateTests.cs
 ├── NotificationWebhookValidatorTests.cs
-├── NotionWebhookContractTests.cs
 ├── OverviewRowFormatterTests.cs
 ├── UiThemeContrastTests.cs
 └── UiThemePaletteTests.cs
@@ -250,16 +247,13 @@ Playwright/
 ## ブランチ戦略
 
 ### ブランチ構成
-- **`develop`**: 開発用（全ファイル、plans/含む）
-- **`release`**: 公開用（クリーン構成、plans/除外）
-- **`master`**: レガシー（非推奨、`release`への移行推奨）
+- **`main`**: 開発兼公開用（タグでリリース）
 - **`feature/*`**: 機能ブランチ
 
 ### マージフロー
 ```
-feature/* → develop
-develop → release (定期的)
-release → タグ → GitHub Release
+feature/* → main (Squash Merge)
+main → タグ → GitHub Release
 ```
 
 ## ファイルサイズ制約
@@ -320,4 +314,3 @@ release → タグ → GitHub Release
 
 ### リリース向け（補足）
 - `build-info.txt`: ビルド情報（CI生成、release-package/に含まれる）
-

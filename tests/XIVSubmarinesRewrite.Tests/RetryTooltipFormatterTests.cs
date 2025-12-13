@@ -3,7 +3,9 @@ namespace XIVSubmarinesRewrite.Tests;
 using System;
 using System.Linq;
 using Xunit;
+using XIVSubmarinesRewrite.Acquisition;
 using XIVSubmarinesRewrite.Application.Notifications;
+using XIVSubmarinesRewrite.Domain.Models;
 using XIVSubmarinesRewrite.Presentation.Rendering;
 
 /// <summary>
@@ -11,15 +13,30 @@ using XIVSubmarinesRewrite.Presentation.Rendering;
 /// </summary>
 public class RetryTooltipFormatterTests
 {
+    private static NotificationEnvelope CreateTestEnvelope(string submarineName = "Sub-1")
+    {
+        var submarineId = new SubmarineId(0x1UL, 0);
+        var voyageId = VoyageId.Create(submarineId, Guid.NewGuid());
+        return NotificationEnvelope.Create(
+            characterId: 0x1UL,
+            characterName: "Character",
+            worldName: "World",
+            submarineId: submarineId,
+            submarineName: submarineName,
+            routeId: "Route-1",
+            voyageId: voyageId,
+            departure: DateTime.UtcNow.AddHours(-6),
+            arrival: DateTime.UtcNow,
+            status: VoyageStatus.Underway,
+            confidence: SnapshotConfidence.Merged,
+            forceImmediate: false);
+    }
 
     [Fact]
     public void Format_WithRetryHistory_ReturnsCorrectContent()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,
@@ -36,16 +53,16 @@ public class RetryTooltipFormatterTests
         // Assert
         Assert.NotNull(content);
         Assert.NotEmpty(content.Lines);
-        
+
         // ヘッダー
         Assert.Contains(content.Lines, l => l.Text.Contains("リトライ情報") && !l.Text.Contains("デッドレター"));
-        
+
         // 試行回数
         Assert.Contains(content.Lines, l => l.Text.Contains("試行回数: 2回"));
-        
+
         // 最終試行時刻
         Assert.Contains(content.Lines, l => l.Text.Contains("最終試行: 2025-10-26 14:23:45"));
-        
+
         // 次回試行
         Assert.Contains(content.Lines, l => l.Text.Contains("次回試行:") && l.Text.Contains("秒後"));
     }
@@ -54,10 +71,7 @@ public class RetryTooltipFormatterTests
     public void Format_WithDeadLetter_ShowsErrorInfo()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.DeadLetter,
@@ -73,16 +87,16 @@ public class RetryTooltipFormatterTests
 
         // Assert
         Assert.NotNull(content);
-        
+
         // デッドレターヘッダー
         Assert.Contains(content.Lines, l => l.Text.Contains("デッドレター"));
-        
+
         // 上限到達
         Assert.Contains(content.Lines, l => l.Text.Contains("上限到達"));
-        
+
         // エラーメッセージ
         Assert.Contains(content.Lines, l => l.Text.Contains("HTTP 500"));
-        
+
         // エラー色が適用されている
         Assert.Contains(content.Lines, l => l.Color.HasValue && l.Color.Value == UiTheme.ErrorText);
     }
@@ -91,10 +105,7 @@ public class RetryTooltipFormatterTests
     public void Format_WithNoHistory_ShowsNoHistoryMessage()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,
@@ -119,10 +130,7 @@ public class RetryTooltipFormatterTests
         // Arrange
         var now = new DateTime(2025, 10, 26, 14, 23, 45, DateTimeKind.Utc);
         var nextAttempt = now.AddSeconds(8);
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,
@@ -144,10 +152,7 @@ public class RetryTooltipFormatterTests
     public void Format_WithoutLastAttemptTime_DoesNotShowLastAttempt()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,
@@ -170,10 +175,7 @@ public class RetryTooltipFormatterTests
     public void Format_DeadLetterWithoutError_DoesNotShowErrorSection()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.DeadLetter,
@@ -197,10 +199,7 @@ public class RetryTooltipFormatterTests
     {
         // Arrange
         var longError = new string('X', 250) + " error message";
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.DeadLetter,
@@ -228,10 +227,7 @@ public class RetryTooltipFormatterTests
         // Arrange
         var now = new DateTime(2025, 10, 26, 14, 23, 50, DateTimeKind.Utc);
         var nextAttempt = new DateTime(2025, 10, 26, 14, 23, 45, DateTimeKind.Utc); // 過去
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,
@@ -265,10 +261,7 @@ public class RetryTooltipFormatterTests
     public void Format_ContainsSeparators()
     {
         // Arrange
-        var envelope = new NotificationEnvelope(
-            Guid.NewGuid().ToString(),
-            new VoyageNotification(Guid.NewGuid(), "Sub-1", DateTime.UtcNow)
-        );
+        var envelope = CreateTestEnvelope();
         var workItem = new NotificationWorkItemSnapshot(
             envelope,
             NotificationDeliveryState.Pending,

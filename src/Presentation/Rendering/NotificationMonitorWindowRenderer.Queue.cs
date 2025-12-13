@@ -145,8 +145,6 @@ public sealed partial class NotificationMonitorWindowRenderer
     {
         this.settings.EnableDiscord = this.editingSettings.EnableDiscord;
         this.settings.DiscordWebhookUrl = this.editingSettings.DiscordWebhookUrl;
-        this.settings.EnableNotion = this.editingSettings.EnableNotion;
-        this.settings.NotionWebhookUrl = this.editingSettings.NotionWebhookUrl;
         this.settings.DeadLetterRetentionLimit = this.editingSettings.DeadLetterRetentionLimit;
         this.settings.ForceNotifyUnderway = this.editingSettings.ForceNotifyUnderway;
         // Note: NotifyVoyageCompleted は Phase 13 で廃止（設定から削除）
@@ -168,7 +166,6 @@ public sealed partial class NotificationMonitorWindowRenderer
     private void LoadBuffersFromSettings()
     {
         WriteStringToBuffer(this.settings.DiscordWebhookUrl, this.discordUrlBuffer);
-        WriteStringToBuffer(this.settings.NotionWebhookUrl, this.notionUrlBuffer);
         this.editingDiscordBatchWindowSeconds = (float)Math.Clamp(this.settings.DiscordBatchWindowSeconds, 0.5, 15.0);
         this.RevalidateChannelUrls();
     }

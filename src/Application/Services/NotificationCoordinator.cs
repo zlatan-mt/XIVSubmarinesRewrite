@@ -18,7 +18,6 @@ using XIVSubmarinesRewrite.Integrations.Notifications;
 public sealed class NotificationCoordinator
 {
     private readonly IDiscordClient discordClient;
-    private readonly INotionClient notionClient;
     private readonly VoyageNotificationFormatter formatter;
     private readonly RouteCatalog routeCatalog;
     private readonly DiscordNotificationBatcher discordBatcher;
@@ -27,14 +26,12 @@ public sealed class NotificationCoordinator
 
     public NotificationCoordinator(
         IDiscordClient discordClient,
-        INotionClient notionClient,
         VoyageNotificationFormatter formatter,
         RouteCatalog routeCatalog,
         DiscordNotificationBatcher discordBatcher,
         ILogSink log)
     {
         this.discordClient = discordClient;
-        this.notionClient = notionClient;
         this.formatter = formatter;
         this.routeCatalog = routeCatalog;
         this.discordBatcher = discordBatcher;
@@ -45,7 +42,6 @@ public sealed class NotificationCoordinator
     public async ValueTask PublishAlarmAsync(Alarm alarm, CancellationToken cancellationToken = default)
     {
         await this.discordClient.SendAlarmAsync(alarm, cancellationToken).ConfigureAwait(false);
-        await this.notionClient.RecordAlarmAsync(alarm, cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask PublishVoyageCompletionAsync(NotificationEnvelope envelope, CancellationToken cancellationToken = default)
@@ -97,9 +93,6 @@ public sealed class NotificationCoordinator
             envelope.Confidence,
             envelope.HashKey,
             hashShort);
-
-        var notionPayload = this.formatter.CreateNotionPayload(notification);
-        await this.notionClient.RecordVoyageCompletionAsync(notification, notionPayload, cancellationToken).ConfigureAwait(false);
 
         // ForceImmediate でも通常の Process を使用（状態更新は維持、リセットのみ制御）
         var decision = this.discordCycleAggregator.Process(notification, envelope.ForceImmediate);

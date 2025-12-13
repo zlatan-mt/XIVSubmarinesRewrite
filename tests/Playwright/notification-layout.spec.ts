@@ -15,8 +15,6 @@ type LayoutMetrics = {
 type FormState = {
   enableDiscord: boolean;
   discordUrl: string;
-  enableNotion: boolean;
-  notionUrl: string;
 };
 
 function calculateLayoutMetrics(width: number, panelHeight: number, spacingX: number, threshold: number): LayoutMetrics {
@@ -49,9 +47,7 @@ function isDiscordUrl(url: string): boolean {
 function isFormValid(state: FormState): boolean {
   const discordValid = !state.enableDiscord
     || (state.discordUrl.trim().length > 0 && isHttps(state.discordUrl) && isDiscordUrl(state.discordUrl));
-  const notionValid = !state.enableNotion
-    || (state.notionUrl.trim().length > 0 && isHttps(state.notionUrl));
-  return discordValid && notionValid;
+  return discordValid;
 }
 
 test.describe('@notification layout metrics', () => {
@@ -74,8 +70,6 @@ test.describe('@notification validation', () => {
     const valid = isFormValid({
       enableDiscord: true,
       discordUrl: '',
-      enableNotion: false,
-      notionUrl: '',
     });
     expect(valid).toBe(false);
   });
@@ -84,19 +78,7 @@ test.describe('@notification validation', () => {
     const valid = isFormValid({
       enableDiscord: true,
       discordUrl: 'https://discord.com/api/webhooks/123',
-      enableNotion: false,
-      notionUrl: '',
     });
     expect(valid).toBe(true);
-  });
-
-  test('@notification notion url requires https', async () => {
-    const valid = isFormValid({
-      enableDiscord: false,
-      discordUrl: '',
-      enableNotion: true,
-      notionUrl: 'http://hooks.example',
-    });
-    expect(valid).toBe(false);
   });
 });

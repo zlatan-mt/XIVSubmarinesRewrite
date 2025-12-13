@@ -64,17 +64,12 @@ test.describe('@release end-to-end smoke tests', () => {
           <label>Discord Webhook URL</label>
           <input type="url" class="discord-url" />
         </div>
-        <div class="field">
-          <label>Notion Webhook URL</label>
-          <input type="url" class="notion-url" />
-        </div>
         <button class="save-button" disabled>通知設定を保存</button>
       </form>
     `);
     
     // Verify form elements exist
     await expect(page.locator('.discord-url')).toBeVisible();
-    await expect(page.locator('.notion-url')).toBeVisible();
     await expect(page.locator('.save-button')).toBeVisible();
   });
 
@@ -150,4 +145,3 @@ test.describe('@release end-to-end smoke tests', () => {
     await expect(page.locator('section[aria-labelledby]')).toBeVisible();
   });
 });
-

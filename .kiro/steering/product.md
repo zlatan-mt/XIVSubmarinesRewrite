@@ -4,12 +4,12 @@
 XIV Submarines Rewrite
 
 ## プロダクトビジョン
-Final Fantasy XIV の Dalamud プラグインとして、潜水艦探索の管理を自動化し、プレイヤーの時間を節約する。Discord や Notion への通知機能により、ゲーム外でも帰港状況を把握できる次世代の潜水艦管理ツール。
+Final Fantasy XIV の Dalamud プラグインとして、潜水艦探索の管理を自動化し、プレイヤーの時間を節約する。Discord への通知機能により、ゲーム外でも帰港状況を把握できる次世代の潜水艦管理ツール。
 
 ## ターゲットユーザー
 - Final Fantasy XIV のプレイヤー（特に工房潜水艦を活用するプレイヤー）
 - 複数キャラクターで潜水艦を運用している中～上級者
-- Discord や Notion で情報管理を行っているプレイヤー
+- Discord で情報管理を行っているプレイヤー
 
 ## 主要機能
 
@@ -26,7 +26,6 @@ Final Fantasy XIV の Dalamud プラグインとして、潜水艦探索の管�
 
 ### 3. 通知システム
 - Discord Webhook による通知（4隻分を集約）
-- Notion Webhook による通知
 - バッチング機能（指数バックオフリトライ付き）
 - デッドレター管理と再送機能
 

@@ -133,10 +133,6 @@ public sealed class PluginBootstrapper : IDisposable
         this.Services.RegisterSingleton<IDiscordClient>(discordClient);
         this.Services.RegisterSingleton(discordClient);
 
-        var notionClient = new NotionWebhookClient(httpClient, notificationSettings, this.logSink);
-        this.Services.RegisterSingleton<INotionClient>(notionClient);
-        this.Services.RegisterSingleton(notionClient);
-
         IMainThreadDispatcher mainThreadDispatcher = this.framework is not null
             ? new DalamudMainThreadDispatcher(this.framework)
             : new ImmediateMainThreadDispatcher();
@@ -150,7 +146,7 @@ public sealed class PluginBootstrapper : IDisposable
         var discordBatcher = new DiscordNotificationBatcher(discordClient, notificationFormatter, this.logSink, initialBatchWindow);
         this.Services.RegisterSingleton(discordBatcher);
 
-        var notificationCoordinator = new NotificationCoordinator(discordClient, notionClient, notificationFormatter, routeCatalog, discordBatcher, this.logSink);
+        var notificationCoordinator = new NotificationCoordinator(discordClient, notificationFormatter, routeCatalog, discordBatcher, this.logSink);
         this.Services.RegisterSingleton(notificationCoordinator);
 
         var notificationDispatcher = new NotificationCoordinatorDispatcher(notificationCoordinator);

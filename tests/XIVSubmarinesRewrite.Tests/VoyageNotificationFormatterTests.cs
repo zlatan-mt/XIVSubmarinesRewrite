@@ -3,6 +3,7 @@ namespace XIVSubmarinesRewrite.Tests;
 using System;
 using System.Linq;
 using Xunit;
+using XIVSubmarinesRewrite.Acquisition;
 using XIVSubmarinesRewrite.Application.Notifications;
 using XIVSubmarinesRewrite.Domain.Models;
 using XIVSubmarinesRewrite.Infrastructure.Configuration;
@@ -179,45 +180,64 @@ public class VoyageNotificationFormatterTests
 
     // ヘルパーメソッド
     private static VoyageNotification CreateUnderwayNotification(
-        string submarineName, 
+        string submarineName,
         string routeDisplay,
         DateTime? arrivalUtc = null)
     {
         var arrival = arrivalUtc ?? DateTime.UtcNow.AddHours(12);
         var departure = arrival.AddHours(-12);
-        
+        var submarineId = new SubmarineId(0x1UL, 0);
+        var voyageId = VoyageId.Create(submarineId, Guid.NewGuid());
+        var hash = $"hash-{submarineName}-underway";
+
         return new VoyageNotification(
-            Guid.NewGuid(),
-            submarineName,
-            arrival,
-            VoyageStatus.Underway,
-            "Character",
-            "World",
-            routeDisplay,
-            routeDisplay,
-            departure,
-            AcquisitionConfidence.High,
-            DateTime.UtcNow
-        );
+            CharacterId: 0x1UL,
+            CharacterLabel: "Character",
+            CharacterName: "Character",
+            WorldName: "World",
+            SubmarineId: submarineId,
+            SubmarineLabel: submarineName,
+            SubmarineName: submarineName,
+            RouteId: routeDisplay,
+            RouteDisplay: routeDisplay,
+            VoyageId: voyageId,
+            DepartureUtc: departure,
+            ArrivalUtc: arrival,
+            ArrivalLocal: arrival.ToLocalTime(),
+            Duration: null,
+            Status: VoyageStatus.Underway,
+            Confidence: SnapshotConfidence.Merged,
+            HashKey: hash,
+            HashKeyShort: hash.Length > 8 ? hash[..8] : hash);
     }
 
     private static VoyageNotification CreateCompletedNotification(string submarineName)
     {
         var arrival = DateTime.UtcNow.AddHours(-1);
-        
+        var departure = arrival.AddHours(-12);
+        var submarineId = new SubmarineId(0x1UL, 0);
+        var voyageId = VoyageId.Create(submarineId, Guid.NewGuid());
+        var hash = $"hash-{submarineName}-completed";
+
         return new VoyageNotification(
-            Guid.NewGuid(),
-            submarineName,
-            arrival,
-            VoyageStatus.Completed,
-            "Character",
-            "World",
-            "Route",
-            "Route Display",
-            arrival.AddHours(-12),
-            AcquisitionConfidence.High,
-            DateTime.UtcNow
-        );
+            CharacterId: 0x1UL,
+            CharacterLabel: "Character",
+            CharacterName: "Character",
+            WorldName: "World",
+            SubmarineId: submarineId,
+            SubmarineLabel: submarineName,
+            SubmarineName: submarineName,
+            RouteId: "Route",
+            RouteDisplay: "Route Display",
+            VoyageId: voyageId,
+            DepartureUtc: departure,
+            ArrivalUtc: arrival,
+            ArrivalLocal: arrival.ToLocalTime(),
+            Duration: arrival - departure,
+            Status: VoyageStatus.Completed,
+            Confidence: SnapshotConfidence.Merged,
+            HashKey: hash,
+            HashKeyShort: hash.Length > 8 ? hash[..8] : hash);
     }
 }
 

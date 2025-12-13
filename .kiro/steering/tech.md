@@ -62,7 +62,6 @@ Infrastructure (External Services, Storage)
 - `DalamudMemorySubmarineSnapshotSource`: メモリデータソース
 - `SnapshotStorageService`: ローカルストレージ
 - `DiscordNotificationBatcher`: Discord 通知送信
-- `NotionWebhookClient`: Notion 通知送信
 
 ## データフロー
 
@@ -87,7 +86,7 @@ DiscordCycleNotificationAggregator (4隻集約)
   ↓
 NotificationWorker (バッチング)
   ↓
-DiscordNotificationBatcher / NotionWebhookClient
+DiscordNotificationBatcher
 ```
 
 ## UI フレームワーク
@@ -124,11 +123,6 @@ DiscordNotificationBatcher / NotionWebhookClient
 - **リトライ**: 指数バックオフ（最大3回）
 - **タイムアウト**: 10秒
 - **デッドレター**: 失敗通知を記録・再送可能
-
-### Notion Webhook
-- **送信方式**: 個別送信
-- **リトライ**: 同上
-- **タイムアウト**: 10秒
 
 ## テスト戦略
 
@@ -172,8 +166,7 @@ tests/
   - `release.yml`: タグプッシュ時の自動リリース
 
 - **ブランチ戦略**:
-  - `develop`: 開発用（全ファイル、自動CI）
-  - `release`: 公開用（クリーン構成、自動CI）
+  - `main`: 開発兼公開用（タグでリリース）
   - `feature/*`: 機能ブランチ（プッシュ時CI）
 
 - **アーティファクト**:
@@ -240,4 +233,3 @@ tests/
 1. メモリデータソースの完全実装
 2. 航路マスタデータの取得・表示
 3. 通知テンプレートのカスタマイズ機能
-
