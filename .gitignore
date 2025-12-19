@@ -69,10 +69,9 @@ icon.original.png
 .gemini/
 
 # ===========================================
-# Kiro SDD tool settings (generic templates)
+# Kiro SDD (AI development context)
 # ===========================================
-.kiro/settings/
-.kiro/cache/
+.kiro/
 
 # ===========================================
 # Build artifacts (use GitHub Releases)
@@ -86,6 +85,16 @@ docs/analysis/
 docs/ai-development/
 
 # ===========================================
-# Archived plans (historical)
+# Development plans (temporary)
 # ===========================================
-plans/archive/
+plans/
+
+# ===========================================
+# Local development tools
+# ===========================================
+tools/
+
+# ===========================================
+# Release notes (use GitHub Releases)
+# ===========================================
+docs/releases/
