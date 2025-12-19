@@ -59,3 +59,33 @@ commit-graph-backup.txt
 
 # Original assets
 icon.original.png
+
+# ===========================================
+# AI Editor configurations (editor-specific)
+# ===========================================
+.claude/
+.codex/
+.cursor/
+.gemini/
+
+# ===========================================
+# Kiro SDD tool settings (generic templates)
+# ===========================================
+.kiro/settings/
+.kiro/cache/
+
+# ===========================================
+# Build artifacts (use GitHub Releases)
+# ===========================================
+release-package/
+
+# ===========================================
+# Development analysis (temporary)
+# ===========================================
+docs/analysis/
+docs/ai-development/
+
+# ===========================================
+# Archived plans (historical)
+# ===========================================
+plans/archive/
