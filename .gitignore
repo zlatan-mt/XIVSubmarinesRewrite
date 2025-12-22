@@ -43,6 +43,33 @@ logs/
 store/
 .DS_Store
 *.log
+.dotnet*/
+
+# Large files (archives, media, disk images, data)
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.bz2
+*.xz
+*.zst
+*.iso
+*.dmg
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.psd
+*.ai
+*.blend
+*.bin
+*.dat
+*.sqlite
+*.db
+*.dump
+*.dmp
 
 # Backups and work-in-progress
 *.backup

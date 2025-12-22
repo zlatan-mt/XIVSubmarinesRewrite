@@ -31,29 +31,33 @@ public sealed unsafe class DalamudMemorySubmarineSnapshotSource : IMemorySubmari
     private static readonly TimeSpan NameJitterSuppressionWindow = TimeSpan.FromMilliseconds(750);
 
     private readonly IClientState clientState;
+    private readonly IPlayerState playerState;
+    private readonly IObjectTable objectTable;
     private readonly ILogSink log;
     private readonly Dictionary<SubmarineId, NameSample> lastNameSamples = new ();
     private readonly object sampleGate = new ();
 
-    public DalamudMemorySubmarineSnapshotSource(IClientState clientState, ILogSink log)
+    public DalamudMemorySubmarineSnapshotSource(IClientState clientState, IPlayerState playerState, IObjectTable objectTable, ILogSink log)
     {
         this.clientState = clientState;
+        this.playerState = playerState;
+        this.objectTable = objectTable;
         this.log = log;
     }
 
     public ValueTask<IReadOnlyList<Submarine>?> TryReadAsync(CancellationToken cancellationToken = default)
     {
-        if (!this.clientState.IsLoggedIn || this.clientState.LocalPlayer is null)
+        if (!this.clientState.IsLoggedIn || this.objectTable.LocalPlayer is null)
         {
             return ValueTask.FromResult<IReadOnlyList<Submarine>?>(null);
         }
 
         try
         {
-            var characterId = this.clientState.LocalContentId;
+            var characterId = this.playerState.ContentId;
             if (characterId == 0)
             {
-                this.log.Log(LogLevel.Debug, "[Memory] LocalContentId unavailable; skipping memory snapshot.");
+                this.log.Log(LogLevel.Debug, "[Memory] ContentId unavailable; skipping memory snapshot.");
                 return ValueTask.FromResult<IReadOnlyList<Submarine>?>(null);
             }
 

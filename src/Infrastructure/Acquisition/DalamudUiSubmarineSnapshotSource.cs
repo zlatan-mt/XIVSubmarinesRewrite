@@ -26,7 +26,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource : IUiSubmari
     private readonly IAddonLifecycle? addonLifecycle;
     private readonly IGameGui gameGui;
     private readonly ILogSink log;
-    private readonly IClientState clientState;
+    private readonly IPlayerState playerState;
     private readonly IAddonLifecycle.AddonEventDelegate lifecycleHandler;
     private readonly List<IDisposable> lifecycleSubscriptions = new ();
     private readonly List<(AddonEvent EventType, string AddonName)> lifecycleRegistrations = new ();
@@ -35,19 +35,19 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource : IUiSubmari
     private DateTime lastTerritoryGateLogAtUtc;
     private DateTime lastNormalizedRowLogAtUtc;
 
-    public DalamudUiSubmarineSnapshotSource(IAddonLifecycle? addonLifecycle, IGameGui gameGui, IClientState clientState, ILogSink log)
+    public DalamudUiSubmarineSnapshotSource(IAddonLifecycle? addonLifecycle, IGameGui gameGui, IPlayerState playerState, ILogSink log)
     {
         this.addonLifecycle = addonLifecycle;
         this.gameGui = gameGui;
         this.log = log;
-        this.clientState = clientState;
+        this.playerState = playerState;
         this.lifecycleHandler = this.OnAddonLifecycle;
         this.RegisterLifecycle();
     }
 
     public ValueTask<IReadOnlyList<Submarine>?> TryReadAsync(CancellationToken cancellationToken = default)
     {
-        if (this.clientState.LocalContentId == 0)
+        if (this.playerState.ContentId == 0)
         {
             return ValueTask.FromResult<IReadOnlyList<Submarine>?>(null);
         }

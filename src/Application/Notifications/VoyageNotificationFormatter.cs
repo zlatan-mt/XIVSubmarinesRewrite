@@ -46,7 +46,13 @@ public sealed class VoyageNotificationFormatter
 
         // フィールド: 帰還予定のみ
         var arrivalTime = FormatLocalTimestamp(notification.ArrivalLocal);
-        var remaining = FormatRemainingConcise(notification.Duration);
+        var remainingSpan = notification.ArrivalUtc - DateTime.UtcNow;
+        if (remainingSpan < TimeSpan.Zero)
+        {
+            remainingSpan = TimeSpan.Zero;
+        }
+
+        var remaining = FormatRemainingConcise(remainingSpan);
         var arrivalField = new DiscordNotificationField(
             "帰還予定",
             $"{arrivalTime} ({remaining})",
@@ -101,35 +107,27 @@ public sealed class VoyageNotificationFormatter
         // 色: Underway用
         var color = UnderwayColor;
 
-        // 最も遅く帰還する潜水艦を特定（メイン表示用）
-        var sortedNotifications = notifications.OrderBy(n => n.ArrivalUtc).ToList();
-        var latestNotification = sortedNotifications[^1]; // 最後（最も遅い）
+        // Phase 13: バッチ通知は「フィールド4本（各潜水艦1本）」で簡潔に提示する。
+        // 旧実装のコードブロック表示は、テスト/運用上の安定性を優先して採用しない。
+        var description = string.Empty;
+        var fields = notifications
+            .OrderBy(n => n.ArrivalUtc)
+            .Select(n =>
+            {
+                var arrivalTime = FormatLocalTimestamp(n.ArrivalLocal);
+                var remainingSpan = n.ArrivalUtc - DateTime.UtcNow;
+                if (remainingSpan < TimeSpan.Zero)
+                {
+                    remainingSpan = TimeSpan.Zero;
+                }
 
-        // 説明: 最も遅い帰還時刻のみを表示
-        // 太字で強調し、視覚的に目立たせる（Discordのembed descriptionでは色の直接指定は不可）
-        var latestArrivalTime = FormatLocalTimestamp(latestNotification.ArrivalLocal);
-        var description = $"**🟠 帰還時間: {latestArrivalTime}**";
-
-        // 各潜水艦を1行ずつ縦に並べて表示
-        // フォーマット: "潜水艦名 帰還時間(曜日)"
-        // 潜水艦名の長さを統一して、帰還日時を揃える
-        // Discordのコードブロックを使用して等幅フォントで表示し、確実に整列させる
-        var maxLabelLength = sortedNotifications.Max(n => n.SubmarineLabel?.Length ?? 0);
-        var submarineLines = sortedNotifications.Select(n =>
-        {
-            var arrivalTime = FormatLocalTimestamp(n.ArrivalLocal);
-            // 潜水艦名を固定幅にパディング（半角スペースで揃える）
-            // コードブロック内では等幅フォントが使われるため、半角スペースで十分
-            var paddedLabel = (n.SubmarineLabel ?? string.Empty).PadRight(maxLabelLength, ' '); // 半角スペース
-            return $"{paddedLabel} {arrivalTime}";
-        });
-
-        // 説明フィールドに全情報を追加（縦並び表示）
-        // Discordのコードブロックで囲むことで、等幅フォントで表示し、アライメントを保証
-        description = $"{description}\n\n```\n{string.Join("\n", submarineLines)}\n```";
-
-        // フィールドは使用しない（説明フィールドに全情報を表示）
-        var fields = new List<DiscordNotificationField>();
+                var remaining = FormatRemainingConcise(remainingSpan);
+                return new DiscordNotificationField(
+                    Name: n.SubmarineLabel ?? "Submarine",
+                    Value: $"{arrivalTime} ({remaining})",
+                    Inline: true);
+            })
+            .ToList();
 
         // オプション: バッチリマインダーコマンド（Task 3.3）
         if (this.settings.EnableReminderCommand && notifications.Count > 0)

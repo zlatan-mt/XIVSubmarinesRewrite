@@ -17,6 +17,8 @@ using XIVSubmarinesRewrite.Infrastructure.Logging;
 public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
 {
     private readonly IClientState clientState;
+    private readonly IPlayerState playerState;
+    private readonly IObjectTable objectTable;
     private readonly ILogSink log;
     private readonly ISettingsProvider settings;
     private readonly CharacterRegistryPreferences preferences;
@@ -26,9 +28,11 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
     private readonly Dictionary<ulong, DateTime> lastSubmarineOperationUtc = new ();
     private ulong activeCharacterId;
 
-    public CharacterRegistry(IClientState clientState, ILogSink log, ISettingsProvider settings)
+    public CharacterRegistry(IClientState clientState, IPlayerState playerState, IObjectTable objectTable, ILogSink log, ISettingsProvider settings)
     {
         this.clientState = clientState;
+        this.playerState = playerState;
+        this.objectTable = objectTable;
         this.log = log;
         this.settings = settings;
         this.preferences = this.settings.Get<CharacterRegistryPreferences>();
@@ -61,9 +65,9 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
 
         this.clientState.Login += this.OnLogin;
         this.clientState.Logout += this.OnLogout;
-        if (this.clientState.LocalContentId != 0)
+        if (this.playerState.ContentId != 0)
         {
-            this.activeCharacterId = this.clientState.LocalContentId;
+            this.activeCharacterId = this.playerState.ContentId;
         }
     }
 
@@ -272,10 +276,10 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
 
     private void OnLogin()
     {
-        var cid = this.clientState.LocalContentId;
+        var cid = this.playerState.ContentId;
         if (cid == 0)
         {
-            this.log.Log(LogLevel.Debug, "[CharacterRegistry] Login detected but LocalContentId is zero.");
+            this.log.Log(LogLevel.Debug, "[CharacterRegistry] Login detected but ContentId is zero.");
             return;
         }
 
@@ -298,7 +302,7 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
 
     private bool UpdateDescriptorFromClientState(ulong characterId)
     {
-        if (characterId == 0 || characterId != this.clientState.LocalContentId || this.clientState.LocalPlayer is null)
+        if (characterId == 0 || characterId != this.playerState.ContentId || this.objectTable.LocalPlayer is null)
         {
             return false;
         }
@@ -314,7 +318,7 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
                 requiresPersist = true;
             }
 
-            var player = this.clientState.LocalPlayer!;
+            var player = this.objectTable.LocalPlayer!;
             var name = player.Name?.TextValue;
             var world = player.HomeWorld.ValueNullable?.Name.ToString();
             updated = descriptor.Update(name, world);
@@ -343,11 +347,11 @@ public sealed class CharacterRegistry : ICharacterRegistry, IDisposable
         }
 
         if ((string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(world))
-            && snapshot.CharacterId == this.clientState.LocalContentId)
+            && snapshot.CharacterId == this.playerState.ContentId)
         {
             try
             {
-                var player = this.clientState.LocalPlayer;
+                var player = this.objectTable.LocalPlayer;
                 if (player is not null)
                 {
                     name ??= player.Name?.TextValue;

@@ -47,7 +47,7 @@ public sealed partial class OverviewWindowRenderer : IViewRenderer
         this.routeCatalog = routeCatalog;
         this.preferences = settings.Get<UiPreferences>();
         this.versionLabel = BuildMetadata.DisplayVersion;
-        this.isVisible = this.preferences.OverviewWindowVisible;
+        this.isVisible = this.preferences.OverviewWindowVisible ?? false;
         this.selectedCharacterId = this.preferences.LastSelectedCharacterId ?? this.characterRegistry.ActiveCharacterId;
         this.characterRegistry.ActiveCharacterChanged += this.OnActiveCharacterChanged;
         this.characterRegistry.CharacterListChanged += this.OnCharacterListChanged;

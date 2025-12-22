@@ -12,7 +12,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Changed (WIP - Dalamud API 14 Migration)
+
+- **Dalamud API 14 への移行** (ビルド未検証 - API 14 DLL 公開待ち):
+  - TargetFramework を `net10.0-windows` に更新
+  - DalamudPackager を 14.0.1 に更新
+  - `IClientState.LocalContentId` → `IPlayerState.ContentId` に移行
+  - `IClientState.LocalPlayer` → `IObjectTable.LocalPlayer` に移行
+  - Plugin.cs, CharacterRegistry, DalamudUiSubmarineSnapshotSource, DalamudMemorySubmarineSnapshotSource を更新
+  - PluginBootstrapper に IPlayerState, IObjectTable を追加
+
+### Technical Details
+
+- 調査ノート: `plans/api14-investigation-notes.md`
+- 移行計画: `plans/api14-migration-plan.md`
+- 安全タグ: `v1.3.0-pre-api14-migration`
+
+### Known Issues
+
+- API 14 対応の Dalamud DLL が配布チャンネルで公開されるまでビルドできません
 
 ## [1.3.0] - 2025-12-08
 

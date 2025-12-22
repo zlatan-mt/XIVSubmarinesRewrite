@@ -48,6 +48,7 @@ public class VoyageCompletionProjectionPhase13Tests
             arrival: DateTime.UtcNow.AddHours(12)
         );
         cache.Update(initialSnapshot, 1);
+        queue.Clear(); // ベースライン更新によるUnderway通知はこのテストの対象外
 
         // Act: Completed状態に変更
         var completedSnapshot = CreateSnapshot(

@@ -38,6 +38,8 @@ public sealed class PluginBootstrapper : IDisposable
     private readonly IUiSubmarineSnapshotSource? overrideUiSource;
     private readonly ILogSink logSink;
     private readonly IClientState clientState;
+    private readonly IPlayerState? playerState;
+    private readonly IObjectTable? objectTable;
     private readonly IFramework? framework;
     private readonly IDalamudPluginInterface? pluginInterface;
     private readonly IDataManager? dataManager;
@@ -51,9 +53,13 @@ public sealed class PluginBootstrapper : IDisposable
         ILogSink? logSink = null,
         IFramework? framework = null,
         IDalamudPluginInterface? pluginInterface = null,
-        IDataManager? dataManager = null)
+        IDataManager? dataManager = null,
+        IPlayerState? playerState = null,
+        IObjectTable? objectTable = null)
     {
         this.clientState = clientState;
+        this.playerState = playerState;
+        this.objectTable = objectTable;
         this.overrideMemorySource = memorySource;
         this.overrideUiSource = uiSource;
         this.logSink = logSink ?? new NullLogSink();
@@ -99,7 +105,7 @@ public sealed class PluginBootstrapper : IDisposable
         var storageService = new SnapshotStorageService(settings, migrator);
         this.Services.RegisterSingleton(storageService);
 
-        var characterRegistry = new CharacterRegistry(this.clientState, this.logSink, settings);
+        var characterRegistry = new CharacterRegistry(this.clientState, this.playerState!, this.objectTable!, this.logSink, settings);
         this.Services.RegisterSingleton<ICharacterRegistry>(characterRegistry);
         this.Services.RegisterSingleton(characterRegistry);
 

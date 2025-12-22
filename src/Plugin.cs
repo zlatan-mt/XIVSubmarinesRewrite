@@ -37,6 +37,8 @@ public sealed class Plugin : IDalamudPlugin
 
     [PluginService] private static IFramework Framework { get; set; } = null!;
     [PluginService] private static IClientState ClientState { get; set; } = null!;
+    [PluginService] private static IPlayerState PlayerState { get; set; } = null!;
+    [PluginService] private static IObjectTable ObjectTable { get; set; } = null!;
     [PluginService] private static IGameGui GameGui { get; set; } = null!;
     [PluginService] private static IAddonLifecycle AddonLifecycle { get; set; } = null!;
     [PluginService] private static IPluginLog PluginLog { get; set; } = null!;
@@ -50,9 +52,9 @@ public sealed class Plugin : IDalamudPlugin
     {
         var log = new DalamudPluginLogSink(PluginLog);
         log.Log(LogLevel.Debug, "[Plugin] AddonLifecycle type=" + (AddonLifecycle?.GetType().FullName ?? "null"));
-        var memorySource = new DalamudMemorySubmarineSnapshotSource(ClientState, log);
-        var uiSource = new DalamudUiSubmarineSnapshotSource(AddonLifecycle, GameGui, ClientState, log);
-        this.bootstrapper = new PluginBootstrapper(ClientState, memorySource, uiSource, log, Framework, PluginInterface, DataManager);
+        var memorySource = new DalamudMemorySubmarineSnapshotSource(ClientState, PlayerState, ObjectTable, log);
+        var uiSource = new DalamudUiSubmarineSnapshotSource(AddonLifecycle, GameGui, PlayerState, log);
+        this.bootstrapper = new PluginBootstrapper(ClientState, memorySource, uiSource, log, Framework, PluginInterface, DataManager, PlayerState, ObjectTable);
         this.orchestrator = this.bootstrapper.Services.Resolve<SnapshotOrchestrator>();
         this.options = this.bootstrapper.Services.Resolve<AcquisitionOptions>();
         this.modeController = this.bootstrapper.Services.Resolve<LowImpactModeController>();
@@ -62,7 +64,7 @@ public sealed class Plugin : IDalamudPlugin
         this.notificationWindow = this.bootstrapper.Services.Resolve<NotificationMonitorWindowRenderer>();
         var settingsProvider = this.bootstrapper.Services.Resolve<ISettingsProvider>();
         var routeCatalog = this.bootstrapper.Services.Resolve<RouteCatalog>();
-        var initialCid = characterRegistry.ActiveCharacterId != 0 ? characterRegistry.ActiveCharacterId : ClientState.LocalContentId;
+        var initialCid = characterRegistry.ActiveCharacterId != 0 ? characterRegistry.ActiveCharacterId : PlayerState.ContentId;
         if (initialCid != 0)
         {
             characterRegistry.SelectCharacter(initialCid);

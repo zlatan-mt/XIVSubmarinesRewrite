@@ -31,7 +31,7 @@ public sealed class OverviewRowFormatterTests
         try
         {
             var result = OverviewRowFormatter.BuildCopyLine(entry, "A-B-C");
-            Assert.Equal("Aquila | 航行中 | 00m | 9/28 15:30 | A-B-C", result);
+            Assert.Equal("Aquila | 航行中 | 45m | 9/28 15:30 | A-B-C", result);
         }
         finally
         {

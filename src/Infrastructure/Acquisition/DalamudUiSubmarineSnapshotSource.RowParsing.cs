@@ -69,7 +69,7 @@ public sealed unsafe partial class DalamudUiSubmarineSnapshotSource
 
     private SubmarineId CreateSubmarineId(uint nodeId, string? submarineName = null)
     {
-        var cid = this.clientState.LocalContentId;
+        var cid = this.playerState.ContentId;
         byte slot = SubmarineId.PendingSlot;
 
         // まず名前から実際のSlot番号を解決を試みる

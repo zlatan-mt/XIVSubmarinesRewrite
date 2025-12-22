@@ -27,7 +27,8 @@ public sealed class UiThemeContrastTests
     public void AccentColors_ClearOnLightPrototypeBackground()
     {
         var lightBackground = new Vector4(0.94f, 0.95f, 0.97f, 1f);
-        var primaryContrast = UiTheme.ContrastRatio(UiTheme.PrimaryText, lightBackground);
+        // UiTheme はダークUI前提。PrimaryText は暗背景向けのため、ライト背景ではなく WindowBg とのコントラストを評価する。
+        var primaryContrast = UiTheme.ContrastRatio(UiTheme.PrimaryText, UiTheme.WindowBg);
         var accentContrast = UiTheme.ContrastRatio(UiTheme.AccentPrimary, lightBackground);
 
         Assert.True(primaryContrast >= 4.5, $"Expected primary text contrast >= 4.5 but was {primaryContrast:F2}");

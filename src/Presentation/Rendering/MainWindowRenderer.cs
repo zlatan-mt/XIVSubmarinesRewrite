@@ -50,8 +50,8 @@ public sealed partial class MainWindowRenderer : IViewRenderer
         this.settingsProvider = settingsProvider;
         this.versionLabel = BuildMetadata.DisplayVersion;
 
-        this.isVisible = preferences.MainWindowVisible;
-        this.showDeveloperTools = preferences.ShowDeveloperTools;
+        this.isVisible = preferences.MainWindowVisible ?? true;
+        this.showDeveloperTools = preferences.ShowDeveloperTools ?? false;
         this.activeTab = MainWindowTab.Overview;
     }
 
@@ -107,8 +107,8 @@ public sealed partial class MainWindowRenderer : IViewRenderer
         }
 
         var initialSize = new Vector2(
-            MathF.Max(640f, this.preferences.MainWindowWidth),
-            MathF.Max(420f, this.preferences.MainWindowHeight));
+            MathF.Max(640f, this.preferences.MainWindowWidth ?? 780f),
+            MathF.Max(420f, this.preferences.MainWindowHeight ?? 520f));
         ImGui.SetNextWindowSize(initialSize, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSizeConstraints(new Vector2(640f, 420f), new Vector2(1100f, 860f));
         ImGui.PushStyleColor(ImGuiCol.WindowBg, UiTheme.WindowBg);
@@ -142,8 +142,8 @@ public sealed partial class MainWindowRenderer : IViewRenderer
         }
 
         var size = ImGui.GetWindowSize();
-        if (Math.Abs(size.X - this.preferences.MainWindowWidth) < 0.5f
-            && Math.Abs(size.Y - this.preferences.MainWindowHeight) < 0.5f)
+        if (Math.Abs(size.X - (this.preferences.MainWindowWidth ?? 780f)) < 0.5f
+            && Math.Abs(size.Y - (this.preferences.MainWindowHeight ?? 520f)) < 0.5f)
         {
             return;
         }

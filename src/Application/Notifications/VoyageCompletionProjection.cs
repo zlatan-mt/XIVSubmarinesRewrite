@@ -81,12 +81,11 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
             this.snapshots[args.CharacterId] = args.Snapshot;
         }
 
-        if (previous is null)
-        {
-            return;
-        }
-
-        var previousVoyages = ExtractVoyages(previous);
+        // 初回スナップショットでも Underway 通知（Phase 13: 出航通知）を評価する。
+        // UIを開いた瞬間/ログイン直後に検知した航海を取りこぼさないため、previous が null でも処理を継続する。
+        var previousVoyages = previous is null
+            ? new Dictionary<SubmarineId, Voyage>()
+            : ExtractVoyages(previous);
         var currentVoyages = ExtractVoyages(args.Snapshot);
 
         foreach (var (submarineId, voyage) in currentVoyages)
@@ -167,12 +166,6 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         var submarineLabel = snapshot.Submarines.FirstOrDefault(s => s.Id == submarineId)?.Name ?? "<unknown>";
         var hasState = this.forceNotifyStates.TryGetValue(submarineId, out var state);
         this.log.Log(LogLevel.Trace, $"[Notifications] HandleForceNotify evaluating submarineId={submarineId} label={submarineLabel} arrival={arrivalUtc:O} hasState={hasState}");
-
-        if (!hasState && !AllSubmarinesUnderway(snapshot.Submarines))
-        {
-            this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "skip:not-all-underway", null);
-            return;
-        }
 
         if (!hasState)
         {
