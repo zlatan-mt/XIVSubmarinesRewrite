@@ -123,6 +123,9 @@ tools/*
 !tools/DalamudRestore/
 !tools/DalamudRestore/restore.ps1
 !tools/DalamudRestore/restore.sh
+!tools/RendererPreview/
+!tools/RendererPreview/RendererPreview.csproj
+!tools/RendererPreview/Program.cs
 
 # ===========================================
 # Release notes (use GitHub Releases)
