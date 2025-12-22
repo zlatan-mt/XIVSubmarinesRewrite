@@ -12,9 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed (WIP - Dalamud API 14 Migration)
+### Changed
 
-- **Dalamud API 14 への移行** (ビルド未検証 - API 14 DLL 公開待ち):
+- （未記載）
+
+## [1.4.0] - 2025-12-22
+
+### Changed
+
+- **Dalamud API 14 への移行**:
   - TargetFramework を `net10.0-windows` に更新
   - DalamudPackager を 14.0.1 に更新
   - `IClientState.LocalContentId` → `IPlayerState.ContentId` に移行
@@ -27,10 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 調査ノート: `plans/api14-investigation-notes.md`
 - 移行計画: `plans/api14-migration-plan.md`
 - 安全タグ: `v1.3.0-pre-api14-migration`
-
-### Known Issues
-
-- API 14 対応の Dalamud DLL が配布チャンネルで公開されるまでビルドできません
 
 ## [1.3.0] - 2025-12-08
 
@@ -365,7 +367,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.4.0
 [1.3.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.3.0
 [1.2.5]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.5
 [1.2.4]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.4

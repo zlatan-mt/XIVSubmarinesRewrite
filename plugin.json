@@ -3,7 +3,7 @@
   "Name": "XIV Submarines Rewrite",
   "InternalName": "XIVSubmarinesRewrite",
   "Punchline": "Next-generation submarine workshop tools (WIP)",
-  "Description": "Work-in-progress rewrite of the XIV Submarines plugin for Dalamud.",
+  "Description": "Polished single-window UI with Playwright coverage helpers and release-ready metadata.",
   "ApplicableVersion": "any",
   "DalamudApiLevel": 14,
   "Tags": [

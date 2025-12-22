@@ -15,7 +15,7 @@
     ],
     "DownloadLinkInstall": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.4.0/XIVSubmarinesRewrite-v1.4.0.zip",
     "DownloadLinkUpdate": "https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/download/v1.4.0/XIVSubmarinesRewrite-v1.4.0.zip",
-    "LastUpdate": 1763393268,
+    "LastUpdate": 1766408116,
     "_comment_path": "apps/XIVSubmarinesRewrite/repo.json",
     "_comment_summary": "Dalamud 用配布リスト定義ファイル",
     "_comment_reason": "Dalamud のプラグインリストから最新版を参照させるため",
