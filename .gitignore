@@ -119,7 +119,10 @@ plans/
 # ===========================================
 # Local development tools
 # ===========================================
-tools/
+tools/*
+!tools/DalamudRestore/
+!tools/DalamudRestore/restore.ps1
+!tools/DalamudRestore/restore.sh
 
 # ===========================================
 # Release notes (use GitHub Releases)
