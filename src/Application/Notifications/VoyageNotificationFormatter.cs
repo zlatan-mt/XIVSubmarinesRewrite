@@ -107,37 +107,23 @@ public sealed class VoyageNotificationFormatter
         // 色: Underway用
         var color = UnderwayColor;
 
-        // Phase 13: バッチ通知は「フィールド4本（各潜水艦1本）」で簡潔に提示する。
-        // 旧実装のコードブロック表示は、テスト/運用上の安定性を優先して採用しない。
-        var description = string.Empty;
-        var fields = notifications
+        // Phase 13: バッチ通知は本文を主役にし、1行1艦の一覧で視認性を上げる。
+        var ordered = notifications
             .OrderBy(n => n.ArrivalUtc)
-            .Select(n =>
-            {
-                var arrivalTime = FormatLocalTimestamp(n.ArrivalLocal);
-                var remainingSpan = n.ArrivalUtc - DateTime.UtcNow;
-                if (remainingSpan < TimeSpan.Zero)
-                {
-                    remainingSpan = TimeSpan.Zero;
-                }
-
-                var remaining = FormatRemainingConcise(remainingSpan);
-                return new DiscordNotificationField(
-                    Name: n.SubmarineLabel ?? "Submarine",
-                    Value: $"{arrivalTime} ({remaining})",
-                    Inline: true);
-            })
             .ToList();
+        var nowUtc = DateTime.UtcNow;
+        var description = BuildBatchDescription(ordered, nowUtc);
+        var fields = new List<DiscordNotificationField>();
 
         // オプション: バッチリマインダーコマンド（Task 3.3）
-        if (this.settings.EnableReminderCommand && notifications.Count > 0)
+        if (this.settings.EnableReminderCommand && ordered.Count > 0)
         {
             // 最も早い帰還時刻を使用
-            var firstArrival = notifications.Min(n => n.ArrivalLocal);
+            var firstArrival = ordered[0].ArrivalLocal;
             var reminderCommand = FormatReminderCommand(
                 this.settings.ReminderChannelName,
                 firstArrival,
-                $"{notifications.Count}隻帰還開始"
+                $"{ordered.Count}隻帰還開始"
             );
             var reminderField = new DiscordNotificationField(
                 "リマインダー一括設定",
@@ -153,6 +139,51 @@ public sealed class VoyageNotificationFormatter
             Color: color,
             Fields: fields,
             Footer: null);
+    }
+
+    // バッチ通知本文を、1行1艦の一覧に整形します。
+    private static string BuildBatchDescription(IReadOnlyList<VoyageNotification> ordered, DateTime nowUtc)
+    {
+        var latestArrival = ordered[^1].ArrivalLocal;
+        var header = $"🟠 帰還時間: {FormatLocalTimestamp(latestArrival)}";
+        var lines = FormatBatchLines(ordered, nowUtc);
+        return $"{header}\n```\n{string.Join("\n", lines)}\n```";
+    }
+
+    // 表示列の幅を揃えるために、潜水艦名と時刻をパディングします。
+    private static IReadOnlyList<string> FormatBatchLines(IReadOnlyList<VoyageNotification> ordered, DateTime nowUtc)
+    {
+        var entries = ordered
+            .Select(notification =>
+            {
+                var label = NormalizeSubmarineLabel(notification.SubmarineLabel);
+                var arrivalText = FormatLocalTimestamp(notification.ArrivalLocal);
+                var remainingSpan = notification.ArrivalUtc - nowUtc;
+                if (remainingSpan < TimeSpan.Zero)
+                {
+                    remainingSpan = TimeSpan.Zero;
+                }
+
+                var remainingText = FormatRemainingConcise(remainingSpan);
+                return new BatchLine(label, arrivalText, remainingText);
+            })
+            .ToList();
+
+        var maxLabelWidth = entries.Max(entry => entry.SubmarineLabel.Length);
+        var maxArrivalWidth = entries.Max(entry => entry.ArrivalText.Length);
+
+        return entries
+            .Select(entry =>
+                $"{entry.SubmarineLabel.PadRight(maxLabelWidth)}  " +
+                $"{entry.ArrivalText.PadRight(maxArrivalWidth)} " +
+                $"({entry.RemainingText})")
+            .ToList();
+    }
+
+    private static string NormalizeSubmarineLabel(string? label)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(label) ? "Submarine" : label.Trim();
+        return trimmed.Length == 0 ? "Submarine" : trimmed;
     }
 
     private static List<DiscordNotificationField> BuildDiscordFields(VoyageNotification notification)
@@ -271,7 +302,7 @@ public sealed class VoyageNotificationFormatter
     }
 
     /// <summary>
-    /// 残り時間を簡潔にフォーマット（12h, 30m, 12.5h）
+    /// 残り時間を簡潔にフォーマット（1h以上は時間、1時間未満は分）
     /// Phase 13: Discord通知最適化用
     /// </summary>
     /// <param name="duration">残り時間</param>
@@ -298,17 +329,13 @@ public sealed class VoyageNotificationFormatter
             return $"{minutes}m";
         }
 
-        // 1時間以上: 時間単位（0.5刻みで丸める）
-        var hours = span.TotalHours;
-        var roundedHours = Math.Round(hours * 2) / 2; // 0.5刻み
-
-        // 整数時間の場合
+        // 1時間以上: 時間単位（小数1桁まで）
+        var roundedHours = Math.Round(span.TotalHours, 1);
         if (Math.Abs(roundedHours - Math.Floor(roundedHours)) < 0.01)
         {
             return $"{(int)roundedHours}h";
         }
 
-        // 小数点表示（.5のみ）
         return $"{roundedHours:F1}h";
     }
 
@@ -408,6 +435,8 @@ public sealed class VoyageNotificationFormatter
             ? routeId
             : sanitized;
     }
+
+    private sealed record BatchLine(string SubmarineLabel, string ArrivalText, string RemainingText);
 }
 
 public sealed record DiscordNotificationPayload(
