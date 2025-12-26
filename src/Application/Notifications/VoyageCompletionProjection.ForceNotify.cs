@@ -24,6 +24,14 @@ public sealed partial class VoyageCompletionProjection
         this.forceNotifyStates[submarineId] = new ForceNotifyState(sentAt + ForceNotifyCooldownWindow, arrivalUtc, null, reason, sentAt);
     }
 
+    private void SilentInitForceNotify(Voyage voyage, SubmarineId submarineId, string reason)
+    {
+        // 通知は送らずに ForceNotify の状態のみ初期化する。
+        var sentAt = this.timeProvider.GetUtcNow().UtcDateTime;
+        var arrivalUtc = voyage.Arrival?.ToUniversalTime();
+        this.forceNotifyStates[submarineId] = new ForceNotifyState(sentAt + ForceNotifyCooldownWindow, arrivalUtc, null, reason, sentAt);
+    }
+
     private void CleanupForceNotifyState(IEnumerable<Voyage> activeVoyages)
     {
         var activeSet = new HashSet<SubmarineId>();

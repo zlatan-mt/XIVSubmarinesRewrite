@@ -1,3 +1,8 @@
+// apps/XIVSubmarinesRewrite/tests/XIVSubmarinesRewrite.Tests/VoyageCompletionProjectionPhase13Tests.cs
+// VoyageCompletionProjection の通知抑止と通常通知の振る舞いを検証します
+// 起動時抑止と ForceNotify 状態管理の変更を安全に保つために存在します
+// RELEVANT FILES: apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageCompletionProjection.cs, apps/XIVSubmarinesRewrite/src/Application/Notifications/VoyageCompletionProjection.ForceNotify.cs, apps/XIVSubmarinesRewrite/src/Acquisition/SnapshotCache.cs
+
 namespace XIVSubmarinesRewrite.Tests;
 
 using System;
@@ -7,139 +12,219 @@ using System.Threading.Tasks;
 using Xunit;
 using XIVSubmarinesRewrite.Acquisition;
 using XIVSubmarinesRewrite.Application.Notifications;
+using XIVSubmarinesRewrite.Application.Services;
 using XIVSubmarinesRewrite.Domain.Models;
 using XIVSubmarinesRewrite.Infrastructure.Configuration;
 using XIVSubmarinesRewrite.Infrastructure.Logging;
-using XIVSubmarinesRewrite.Application.Services;
 
 /// <summary>
 /// VoyageCompletionProjection のPhase 13変更に関する単体テスト
-/// Completed通知がフィルタリングされることを検証
+/// Completed通知がフィルタリングされることと起動時抑止を検証
 /// </summary>
 public class VoyageCompletionProjectionPhase13Tests
 {
     [Fact]
     public void HandleCompletedVoyage_DoesNotEnqueueNotification()
     {
-        // Arrange
-        var settings = new NotificationSettings
-        {
-            NotifyVoyageCompleted = true, // 設定はtrueでも...
-            NotifyVoyageUnderway = true
-        };
-        var queue = new TestNotificationQueue();
-        var cache = new SnapshotCache();
-        var characterRegistry = new TestCharacterRegistry();
-        var log = new NullLogSink();
-        
-        var projection = new VoyageCompletionProjection(
-            cache,
-            queue,
-            settings,
-            characterRegistry,
-            log
-        );
+        _ = CreateProjection(out var queue, out var cache);
 
-        // 初期スナップショット（Underway状態）
         var initialSnapshot = CreateSnapshot(
             characterId: 1,
             submarineId: new SubmarineId(1, 1),
             status: VoyageStatus.Underway,
-            arrival: DateTime.UtcNow.AddHours(12)
-        );
+            arrival: DateTime.UtcNow.AddHours(12));
         cache.Update(initialSnapshot, 1);
-        queue.Clear(); // ベースライン更新によるUnderway通知はこのテストの対象外
+        queue.Clear();
 
-        // Act: Completed状態に変更
         var completedSnapshot = CreateSnapshot(
             characterId: 1,
             submarineId: new SubmarineId(1, 1),
             status: VoyageStatus.Completed,
-            arrival: DateTime.UtcNow
-        );
+            arrival: DateTime.UtcNow);
         cache.Update(completedSnapshot, 1);
 
-        // Assert: Completed通知は送信されない
         Assert.Empty(queue.EnqueuedNotifications);
     }
 
     [Fact]
-    public void HandleUnderwayVoyage_EnqueuesNotification()
+    public void Startup_Underway_DoesNotNotify()
     {
-        // Arrange
-        var settings = new NotificationSettings
-        {
-            NotifyVoyageUnderway = true
-        };
-        var queue = new TestNotificationQueue();
-        var cache = new SnapshotCache();
-        var characterRegistry = new TestCharacterRegistry();
-        var log = new NullLogSink();
-        
-        var projection = new VoyageCompletionProjection(
-            cache,
-            queue,
-            settings,
-            characterRegistry,
-            log
-        );
+        _ = CreateProjection(out var queue, out var cache);
 
-        // Act: Underway状態のスナップショット
-        var underwaySnapshot = CreateSnapshot(
+        var snapshot = CreateSnapshot(
             characterId: 1,
             submarineId: new SubmarineId(1, 1),
             status: VoyageStatus.Underway,
-            arrival: DateTime.UtcNow.AddHours(12)
-        );
-        cache.Update(underwaySnapshot, 1);
+            arrival: DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshot, 1);
 
-        // Assert: Underway通知は送信される
-        Assert.NotEmpty(queue.EnqueuedNotifications);
+        Assert.Empty(queue.EnqueuedNotifications);
     }
 
     [Fact]
-    public void CompletedThenUnderway_OnlyUnderwayNotificationSent()
+    public void Startup_CachedUnderway_DoesNotNotify()
     {
-        // Arrange
+        var cache = new SnapshotCache();
+        var cached = CreateSnapshot(
+            characterId: 1,
+            submarineId: new SubmarineId(1, 1),
+            status: VoyageStatus.Underway,
+            arrival: DateTime.UtcNow.AddHours(10));
+        cache.Update(cached, 1);
+
+        _ = CreateProjection(cache, out var queue);
+
+        var snapshot = CreateSnapshot(
+            characterId: 1,
+            submarineId: new SubmarineId(1, 1),
+            status: VoyageStatus.Underway,
+            arrival: DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshot, 1);
+
+        Assert.Empty(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void Startup_CachedCompleted_ToUnderway_Suppressed()
+    {
+        var cache = new SnapshotCache();
+        var cached = CreateSnapshot(
+            characterId: 1,
+            submarineId: new SubmarineId(1, 1),
+            status: VoyageStatus.Completed,
+            arrival: DateTime.UtcNow.AddHours(-1));
+        cache.Update(cached, 1);
+
+        _ = CreateProjection(cache, out var queue);
+
+        var snapshot = CreateSnapshot(
+            characterId: 1,
+            submarineId: new SubmarineId(1, 1),
+            status: VoyageStatus.Underway,
+            arrival: DateTime.UtcNow.AddHours(8));
+        cache.Update(snapshot, 1);
+
+        Assert.Empty(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void Startup_SecondCharacter_Suppressed()
+    {
+        _ = CreateProjection(out var queue, out var cache);
+
+        var snapshotA = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshotA, 1);
+
+        var snapshotB = CreateSnapshot(2, new SubmarineId(2, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshotB, 2);
+
+        Assert.Empty(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void Normal_NewSubmarine_Notifies()
+    {
+        _ = CreateProjection(out var queue, out var cache);
+
+        var baseline = CreateSnapshot(1, Array.Empty<Submarine>());
+        cache.Update(baseline, 1);
+        queue.Clear();
+
+        var snapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshot, 1);
+
+        Assert.Single(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void Normal_Transition_CompletedToUnderway_Notifies()
+    {
+        _ = CreateProjection(out var queue, out var cache);
+
+        var baseline = CreateSnapshot(1, Array.Empty<Submarine>());
+        cache.Update(baseline, 1);
+        queue.Clear();
+
+        var completed = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Completed, DateTime.UtcNow.AddHours(-1));
+        cache.Update(completed, 1);
+        queue.Clear();
+
+        var underway = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(8));
+        cache.Update(underway, 1);
+
+        Assert.Single(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void SilentInit_Then_ArrivalChange_Notifies()
+    {
+        _ = CreateProjection(out var queue, out var cache);
+
+        var initial = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(initial, 1);
+        queue.Clear();
+
+        var changed = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(10));
+        cache.Update(changed, 1);
+
+        Assert.Single(queue.EnqueuedNotifications);
+    }
+
+    [Fact]
+    public void SwitchCharacter_Then_Return_Suppressed()
+    {
+        _ = CreateProjection(out var queue, out var cache);
+
+        var snapshotA = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshotA, 1);
+
+        var snapshotB = CreateSnapshot(2, new SubmarineId(2, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshotB, 2);
+
+        var snapshotAReturn = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
+        cache.Update(snapshotAReturn, 1);
+
+        Assert.Empty(queue.EnqueuedNotifications);
+    }
+
+    private static VoyageCompletionProjection CreateProjection(out TestNotificationQueue queue, out SnapshotCache cache)
+    {
+        cache = new SnapshotCache();
+        return CreateProjection(cache, out queue);
+    }
+
+    private static VoyageCompletionProjection CreateProjection(SnapshotCache cache, out TestNotificationQueue queue)
+    {
         var settings = new NotificationSettings
         {
             NotifyVoyageCompleted = true,
-            NotifyVoyageUnderway = true
+            NotifyVoyageUnderway = true,
+            ForceNotifyUnderway = true
         };
-        var queue = new TestNotificationQueue();
-        var cache = new SnapshotCache();
+        queue = new TestNotificationQueue();
         var characterRegistry = new TestCharacterRegistry();
         var log = new NullLogSink();
 
-        var projection = new VoyageCompletionProjection(
+        return new VoyageCompletionProjection(
             cache,
             queue,
             settings,
             characterRegistry,
-            log
-        );
-
-        // 初期: Underway
-        var initialSnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
-        cache.Update(initialSnapshot, 1);
-        queue.Clear();
-
-        // Act 1: Completed状態に変更
-        var completedSnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Completed, DateTime.UtcNow);
-        cache.Update(completedSnapshot, 1);
-
-        // Assert 1: Completed通知は送信されない
-        Assert.Empty(queue.EnqueuedNotifications);
-
-        // Act 2: 次のUnderway状態
-        var nextUnderwaySnapshot = CreateSnapshot(1, new SubmarineId(1, 1), VoyageStatus.Underway, DateTime.UtcNow.AddHours(12));
-        cache.Update(nextUnderwaySnapshot, 1);
-
-        // Assert 2: Underway通知のみ送信される
-        Assert.Single(queue.EnqueuedNotifications);
+            log);
     }
 
-    // ヘルパー
+    private static AcquisitionSnapshot CreateSnapshot(ulong characterId, IReadOnlyList<Submarine> submarines)
+    {
+        return new AcquisitionSnapshot(
+            DateTime.UtcNow,
+            submarines,
+            AcquisitionSourceKind.Composite,
+            characterId,
+            $"Character-{characterId}",
+            $"World-{characterId}",
+            SnapshotConfidence.Merged);
+    }
+
     private static AcquisitionSnapshot CreateSnapshot(
         ulong characterId,
         SubmarineId submarineId,
@@ -152,28 +237,17 @@ public class VoyageCompletionProjectionPhase13Tests
             "Route-1",
             departure,
             arrival,
-            status
-        );
+            status);
 
         var submarine = new Submarine(
             submarineId,
             $"Sub-{submarineId.Slot}",
             "profile-1",
-            new[] { voyage }
-        );
+            new[] { voyage });
 
-        return new AcquisitionSnapshot(
-            DateTime.UtcNow,
-            new[] { submarine },
-            AcquisitionSourceKind.Composite,
-            characterId,
-            $"Character-{characterId}",
-            $"World-{characterId}",
-            SnapshotConfidence.Merged
-        );
+        return CreateSnapshot(characterId, new[] { submarine });
     }
 
-    // テスト用キュー実装
     private class TestNotificationQueue : INotificationQueue
     {
         public List<NotificationEnvelope> EnqueuedNotifications { get; } = new();
@@ -203,7 +277,6 @@ public class VoyageCompletionProjectionPhase13Tests
         public bool TryRequeueDeadLetter(string hashKey) => false;
     }
 
-    // テスト用キャラクターレジストリ
     private class TestCharacterRegistry : ICharacterRegistry
     {
         public event EventHandler<CharacterChangedEventArgs>? ActiveCharacterChanged;
@@ -227,4 +300,3 @@ public class VoyageCompletionProjectionPhase13Tests
         public void CleanupCharactersWithoutSubmarineOperations() { }
     }
 }
-

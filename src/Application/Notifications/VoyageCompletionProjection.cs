@@ -31,6 +31,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private readonly PendingVoyageNotificationStore pendingNotifications = new (CompletedArrivalDuplicateTolerance);
     private readonly Dictionary<SubmarineId, DateTime> lastCompletedArrivals = new ();
     private readonly Queue<ForceNotifyManualTrigger> manualTriggerLog = new ();
+    private readonly HashSet<ulong> initializedCharacters = new ();
     private readonly object gate = new ();
     private bool disposed;
 
@@ -75,10 +76,16 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
     private void OnSnapshotUpdated(object? sender, SnapshotUpdatedEventArgs args)
     {
         AcquisitionSnapshot? previous;
+        bool isStartup;
         lock (this.gate)
         {
             this.snapshots.TryGetValue(args.CharacterId, out previous);
             this.snapshots[args.CharacterId] = args.Snapshot;
+            isStartup = !this.initializedCharacters.Contains(args.CharacterId);
+            if (isStartup)
+            {
+                this.initializedCharacters.Add(args.CharacterId);
+            }
         }
 
         // 初回スナップショットでも Underway 通知（Phase 13: 出航通知）を評価する。
@@ -91,14 +98,14 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         foreach (var (submarineId, voyage) in currentVoyages)
         {
             previousVoyages.TryGetValue(submarineId, out var priorVoyage);
-            this.ProcessVoyage(args.Snapshot, submarineId, voyage, priorVoyage);
+            this.ProcessVoyage(args.Snapshot, submarineId, voyage, priorVoyage, isStartup);
         }
 
         this.CleanupForceNotifyState(currentVoyages.Values);
         this.TryFlushPendingNotifications(args.Snapshot);
     }
 
-    private void ProcessVoyage(AcquisitionSnapshot snapshot, SubmarineId submarineId, Voyage voyage, Voyage? priorVoyage)
+    private void ProcessVoyage(AcquisitionSnapshot snapshot, SubmarineId submarineId, Voyage voyage, Voyage? priorVoyage, bool isStartup)
     {
         if (voyage.Status == VoyageStatus.Completed && voyage.Arrival is not null)
         {
@@ -117,7 +124,8 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
             return;
         }
 
-        this.HandleForceNotify(snapshot, voyage);
+        var isContinuation = isStartup || (priorVoyage?.Status == VoyageStatus.Underway);
+        this.HandleForceNotify(snapshot, voyage, isContinuation);
     }
 
     private void HandleCompletedVoyage(AcquisitionSnapshot snapshot, Voyage voyage, Voyage? priorVoyage)
@@ -159,7 +167,7 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
         return;
     }
 
-    private void HandleForceNotify(AcquisitionSnapshot snapshot, Voyage voyage)
+    private void HandleForceNotify(AcquisitionSnapshot snapshot, Voyage voyage, bool isContinuation)
     {
         var submarineId = voyage.Id.SubmarineId;
         var arrivalUtc = voyage.Arrival?.ToUniversalTime();
@@ -169,6 +177,14 @@ public sealed partial class VoyageCompletionProjection : IDisposable, IForceNoti
 
         if (!hasState)
         {
+            if (isContinuation)
+            {
+                // 起動時/継続扱いは通知せずに状態だけ初期化する。
+                this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "silent-init", null);
+                this.SilentInitForceNotify(voyage, submarineId, "silent-init");
+                return;
+            }
+
             this.LogForceNotifyEvaluation(submarineId, voyage, arrivalUtc, "emit:first-detect", null);
             this.EmitForceNotify(snapshot, voyage, submarineId, "first-detect");
             return;
