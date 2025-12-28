@@ -12,9 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [1.4.1] - 2025-12-28
 
-- （未記載）
+### Fixed
+
+- **起動時のDiscord通知抑制**: プラグイン起動時に航海中の潜水艦がある場合、不要なDiscord通知が送信される問題を修正しました。
+  - キャラクターごとの初回スナップショット時は通知を抑制（サイレント初期化）
+  - 別キャラクターへのログイン時も同様に抑制
+  - 起動後の再出港や時短アイテム使用時は正常に通知
+
+### Technical Details
+
+- `VoyageCompletionProjection` に `initializedCharacters` トラッキングを追加
+- `SilentInitForceNotify` による状態初期化（通知なし）を実装
+- 計画書: `plans/fix_discord_notification.md`
 
 ## [1.4.0] - 2025-12-22
 
@@ -367,7 +378,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.4.1
 [1.4.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.4.0
 [1.3.0]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.3.0
 [1.2.5]: https://github.com/zlatan-mt/XIVSubmarinesRewrite/releases/tag/v1.2.5

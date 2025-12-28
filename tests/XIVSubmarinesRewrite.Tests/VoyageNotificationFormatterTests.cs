@@ -118,15 +118,14 @@ public class VoyageNotificationFormatterTests
 
         // Assert
         Assert.Equal("Mona - 4隻出航", payload.Title);
-        Assert.Empty(payload.Description); // シンプル
-        Assert.Equal(4, payload.Fields.Count); // 4隻分のフィールド
-        
-        // 各フィールドが1行形式
-        foreach (var field in payload.Fields)
-        {
-            Assert.Contains("(", field.Value); // 残り時間を含む
-            Assert.True(field.Inline); // 横並び
-        }
+        // Phase 13: Descriptionにコードブロック形式でバッチ一覧が入る
+        Assert.NotEmpty(payload.Description);
+        Assert.Contains("帰還時間:", payload.Description);
+        Assert.Contains("```", payload.Description); // コードブロック
+        Assert.Contains("Sub-1", payload.Description);
+        Assert.Contains("Sub-4", payload.Description);
+        // リマインダー無効時はFieldsは空
+        Assert.Empty(payload.Fields);
     }
 
     [Fact]
@@ -168,10 +167,12 @@ public class VoyageNotificationFormatterTests
         );
 
         // Assert
-        Assert.Equal(5, payload.Fields.Count); // 4隻 + リマインダー
-        
-        var reminderField = payload.Fields.LastOrDefault();
-        Assert.NotNull(reminderField);
+        // Phase 13: Descriptionにバッチ一覧、Fieldsはリマインダーのみ
+        Assert.NotEmpty(payload.Description);
+        Assert.Contains("Sub-1", payload.Description);
+        Assert.Single(payload.Fields); // リマインダーフィールドのみ
+
+        var reminderField = payload.Fields[0];
         Assert.Equal("リマインダー一括設定", reminderField.Name);
         Assert.Contains("/remind", reminderField.Value);
         Assert.Contains("4隻帰還開始", reminderField.Value);

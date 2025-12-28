@@ -53,7 +53,9 @@ public sealed class DiscordCycleNotificationAggregatorTests
         Assert.NotNull(finalDecision.Value.Aggregate);
         var aggregate = finalDecision.Value.Aggregate!;
         Assert.Equal("Character-DEADBEEF", aggregate.CharacterLabel);
-        Assert.Equal(4, aggregate.Payload.Fields.Count);
+        // Phase 13: リマインダー無効時はFieldsは空、Descriptionにバッチ一覧
+        Assert.Empty(aggregate.Payload.Fields);
+        Assert.NotEmpty(aggregate.Payload.Description);
 
         var debugLogs = log.Entries.Where(e => e.Level == LogLevel.Debug).ToList();
         Assert.Contains(debugLogs, entry => entry.Message.Contains("flushing cycle", StringComparison.Ordinal));
